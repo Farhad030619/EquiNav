@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hästtransport-GPS – Säker navigation för ditt ekipage</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- App Sidebar / Bottom Sheet -->
+        <aside class="sidebar state-peek" id="app-sidebar">
+            <!-- Drag handle only visible on Mobile -->
+            <div class="bottom-sheet-handle" id="bottom-sheet-drag"></div>
+            
+            <header class="sidebar-header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" width="32" height="32" class="logo-icon">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z" fill="currentColor"/>
+                    </svg>
+                    <h1>Hästtransport<span>GPS</span></h1>
+                </div>
+                <p class="tagline">Säkerhet & trygghet för dig och din häst på vägarna</p>
+            </header>
+
+            <!-- Navigation Tabs -->
+            <nav class="sidebar-tabs">
+                <button class="tab-btn active" data-tab="tab-route">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"/>
+                    </svg>
+                    <span>Rutt & GPS</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-calculator">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H6v-2h6v2zm0-4H6v-2h6v2zm0-4H6V7h6v2zm7 8h-5v-2h5v2zm0-4h-5v-2h5v2zm0-4h-5V7h5v2z" fill="currentColor"/>
+                    </svg>
+                    <span>Viktkalkyl</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-hazards">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+                    </svg>
+                    <span>Hinder</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-emergency">
+                    <svg viewBox="0 0 24 24" width="20" height="20">
+                        <path d="M19 10.5c0 3.58-3.34 7.6-7 10.6-3.66-3-7-7.02-7-10.6C5 6.48 8.13 4 12 4s7 2.48 7 6.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 10h3v-2h-3V7h-2v3H8v2h3v3h2v-3z" fill="currentColor"/>
+                    </svg>
+                    <span>Akut SOS</span>
+                </button>
+            </nav>
+
+            <!-- Tab Contents -->
+            <div class="sidebar-content">
+                
+                <!-- Tab: Route & Navigation -->
+                <div class="tab-panel active" id="tab-route">
+                    <div class="card card-input">
+                        <h3>Planera säker rutt</h3>
+                        
+                        <div class="form-group">
+                            <label for="input-start">Startplats</label>
+                            <div class="input-action-wrapper">
+                                <input type="text" id="input-start" placeholder="Välj startplats..." value="Stockholm">
+                                <button class="input-action-btn" id="btn-use-gps" title="Hitta min position">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="input-end">Slutdestination</label>
+                            <input type="text" id="input-end" placeholder="Välj slutdestination..." value="Strömsholm">
+                        </div>
+                        
+                        <div class="shortcuts">
+                            <span>Snabba val:</span>
+                            <button class="shortcut-btn" data-start="Stockholm" data-end="Strömsholm">Sthlm → Strömsholm</button>
+                            <button class="shortcut-btn" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
+                        </div>
+                        
+                        <div class="route-advanced-settings" style="margin-top: 12px; margin-bottom: 12px;">
+                            <details>
+                                <summary style="font-size: 13px; color: var(--primary-color); cursor: pointer; font-weight: 500; user-select: none;">
+                                    ⚙️ Avancerade ruttinställningar
+                                </summary>
+                                <div class="advanced-inputs" style="padding-top: 8px; display: flex; gap: 10px;">
+                                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                        <label for="input-towing-speed" style="font-size: 11px;">Snitthastighet (km/h)</label>
+                                        <input type="number" id="input-towing-speed" value="75" min="40" max="90" style="font-size: 12px; padding: 6px 10px; height: auto;">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                        <label for="input-turn-penalty" style="font-size: 11px;">Sväng-tillägg (sek)</label>
+                                        <input type="number" id="input-turn-penalty" value="15" min="0" max="60" style="font-size: 12px; padding: 6px 10px; height: auto;">
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <button id="btn-find-route" class="btn btn-primary">
+                            <span>Beräkna Hästrutt</span>
+                        </button>
+                    </div>
+
+
+                    <!-- Route Results -->
+                    <div id="route-results" class="results-container hidden">
+                        <div class="card result-card">
+                            <div class="result-header">
+                                <span class="badge badge-success">Hästrutt optimerad</span>
+                                <h4 id="route-title">Stockholm till Strömsholm</h4>
+                            </div>
+                            
+                            <div class="result-stats">
+                                <div class="stat-box">
+                                    <span class="stat-label">Restid med Släp</span>
+                                    <span class="stat-value highlight" id="stat-horse-eta">--:--</span>
+                                    <span class="stat-sub">Max 80 km/h + kurvor</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Bil (Normalt)</span>
+                                    <span class="stat-value" id="stat-car-eta">--:--</span>
+                                    <span class="stat-sub">Normalhastighet</span>
+                                </div>
+                            </div>
+
+                            <div class="route-details-list">
+                                <div class="detail-item">
+                                    <div class="detail-icon">📏</div>
+                                    <div class="detail-text">
+                                        <strong>Distans:</strong> <span id="stat-distance">-- km</span>
+                                    </div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-icon">🔄</div>
+                                    <div class="detail-text">
+                                        <strong>Svängar & rondeller:</strong> <span id="stat-turns">-- st</span>
+                                        <div class="help-text">Varje sväng ger +15s rull-tillägg.</div>
+                                    </div>
+                                </div>
+                                <div class="detail-item alert-item" id="route-warnings-container">
+                                    <div class="detail-icon">⚠️</div>
+                                    <div class="detail-text">
+                                        <strong>Säkerhetsvarningar:</strong>
+                                        <ul class="warning-list" id="route-warnings">
+                                            <li>Inga varningar</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                                <button id="btn-start-navigation" class="btn btn-success" style="flex: 1; background-color: #1b5e20; border-color: #1b5e20; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: 600; color: white;">
+                                    <span>📡</span> Live GPS
+                                </button>
+                                <button id="btn-simulate-navigation" class="btn btn-secondary" style="flex: 1; background-color: #5a665f; border-color: #5a665f; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: 600; color: white;">
+                                    <span>🎮</span> Simulera
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Navigation Directions -->
+                        <div class="card directions-card">
+                            <h4>Köranvisningar</h4>
+                            <ol class="directions-list" id="directions-list">
+                                <li>Beräkna en rutt för att se anvisningar.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Weight & License Calculator -->
+                <div class="tab-panel" id="tab-calculator">
+                    <div class="card">
+                        <h3>Regnummerkoll & Viktkalkyl</h3>
+                        <p class="section-intro">Kontrollera snabbt om din dragbil och släpkombination är laglig och matchar ditt körkort.</p>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="calc-car-reg">Regnr Bil</label>
+                                <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                            </div>
+                            <div class="form-group half">
+                                <label for="calc-trailer-reg">Regnr Släp</label>
+                                <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="calc-horse-weight">Hästens vikt (kg)</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="calc-horse-weight" placeholder="T.ex. 600" value="600">
+                                <span class="unit">kg</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ditt körkort</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="license-type" value="B" checked>
+                                    <div class="radio-custom">
+                                        <strong>B-kort</strong>
+                                        <span>Max 3500kg tågvikt</span>
+                                    </div>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="license-type" value="B96">
+                                    <div class="radio-custom">
+                                        <strong>B96 (Utökad)</strong>
+                                        <span>Max 4250kg tågvikt</span>
+                                    </div>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="license-type" value="BE">
+                                    <div class="radio-custom">
+                                        <strong>BE-kort</strong>
+                                        <span>Släp upp till 3500kg</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <button id="btn-calculate-weights" class="btn btn-primary">Kontrollera kombination</button>
+                    </div>
+
+                    <!-- Calculator Results -->
+                    <div id="calculator-results" class="results-container hidden">
+                        <!-- Legal Status Banner -->
+                        <div class="legal-banner" id="calc-status-banner">
+                            <div class="banner-icon" id="calc-status-icon">🟢</div>
+                            <div class="banner-text">
+                                <h4 id="calc-status-title">Godkänt och lagligt!</h4>
+                                <p id="calc-status-desc">Du kan köra detta ekipage lagligt på ditt nuvarande körkort.</p>
+                            </div>
+                        </div>
+
+                        <!-- Technical Specs Card -->
+                        <div class="card specs-card">
+                            <h4>Tekniska Specifikationer (Supabase)</h4>
+                            <div class="spec-grid">
+                                <div class="spec-section">
+                                    <h5>Dragbil: <span id="val-car-name">--</span></h5>
+                                    <div class="spec-row"><span>Tjänstevikt:</span> <strong id="val-car-curb">-- kg</strong></div>
+                                    <div class="spec-row"><span>Totalvikt:</span> <strong id="val-car-total">-- kg</strong></div>
+                                    <div class="spec-row"><span>Max släpvikt (BE):</span> <strong id="val-car-max-tow">-- kg</strong></div>
+                                </div>
+                                <div class="spec-section">
+                                    <h5>Släpvagn: <span id="val-trailer-name">--</span></h5>
+                                    <div class="spec-row"><span>Tjänstevikt:</span> <strong id="val-trailer-curb">-- kg</strong></div>
+                                    <div class="spec-row"><span>Totalvikt:</span> <strong id="val-trailer-total">-- kg</strong></div>
+                                    <div class="spec-row"><span>Max lastvikt:</span> <strong id="val-trailer-payload">-- kg</strong></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manual Adjustment / Custom Overrides -->
+                        <div class="card override-card">
+                            <details>
+                                <summary>Ändra fordonsvikter manuellt</summary>
+                                <div class="override-inputs">
+                                    <div class="form-row">
+                                        <div class="form-group half">
+                                            <label for="override-car-total">Bil Totalvikt</label>
+                                            <input type="number" id="override-car-total" value="2750">
+                                        </div>
+                                        <div class="form-group half">
+                                            <label for="override-car-max-tow">Bil Max Släpvikt</label>
+                                            <input type="number" id="override-car-max-tow" value="2700">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group half">
+                                            <label for="override-trailer-curb">Släp Tjänstevikt</label>
+                                            <input type="number" id="override-trailer-curb" value="850">
+                                        </div>
+                                        <div class="form-group half">
+                                            <label for="override-trailer-total">Släp Totalvikt</label>
+                                            <input type="number" id="override-trailer-total" value="2000">
+                                        </div>
+                                    </div>
+                                    <button id="btn-recalc-manual" class="btn btn-secondary btn-sm">Uppdatera manuellt</button>
+                                </div>
+                            </details>
+                        </div>
+
+                        <!-- Calculation details & progress bars -->
+                        <div class="card calculation-details">
+                            <h4>Viktkalkylator detaljer</h4>
+                            
+                            <div class="meter-group">
+                                <div class="meter-header">
+                                    <span>Släpets bruttovikt (Tjänstevikt + häst) vs Släpets totalvikt</span>
+                                    <span id="meter-trailer-text">-- kg / -- kg</span>
+                                </div>
+                                <div class="meter-bar">
+                                    <div class="meter-fill" id="meter-trailer-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="meter-status" id="meter-trailer-status">--</div>
+                            </div>
+
+                            <div class="meter-group">
+                                <div class="meter-header">
+                                    <span>Släpets bruttovikt (Faktisk vikt) vs Bilens max släpvikt</span>
+                                    <span id="meter-car-tow-text">-- kg / -- kg</span>
+                                </div>
+                                <div class="meter-bar">
+                                    <div class="meter-fill" id="meter-car-tow-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="meter-status" id="meter-car-tow-status">--</div>
+                            </div>
+
+                            <div class="meter-group">
+                                <div class="meter-header">
+                                    <span>Tågvikt för körkort (Bil totalvikt + släp totalvikt) vs Körkortsgräns</span>
+                                    <span id="meter-license-text">-- kg / -- kg</span>
+                                </div>
+                                <div class="meter-bar">
+                                    <div class="meter-fill" id="meter-license-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="meter-status" id="meter-license-status">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Hazards/Reports -->
+                <div class="tab-panel" id="tab-hazards">
+                    <div class="card">
+                        <h3>Hinderrapportering</h3>
+                        <p class="section-intro">Här kan du se och lägga till varningar om väghinder som påverkar hästtransporter.</p>
+                        
+                        <div class="add-hazard-box">
+                            <h4>Rapportera nytt hinder</h4>
+                            <p class="help-text">Klicka på kartan för att placera markören, fyll i kommentaren nedan och klicka spara.</p>
+                            
+                            <div class="form-group">
+                                <label for="hazard-type">Hindertyp</label>
+                                <select id="hazard-type">
+                                    <option value="pothole">🕳️ Gupp / Dålig asfalt</option>
+                                    <option value="narrow">🚧 Trång passage / Mötesproblem</option>
+                                    <option value="noturn">🛑 Ingen vändplats / Återvändsgränd</option>
+                                    <option value="low">🌲 Låga grenar / Lågt hinder</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="hazard-comment">Beskrivning / Kommentar</label>
+                                <textarea id="hazard-comment" rows="2" placeholder="T.ex. Mycket rullgrus i kurvan, eller väldigt smalt möte vid bron..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Position</label>
+                                <div id="hazard-coords-display" class="coords-display">
+                                    Ingen position vald (klicka på kartan)
+                                </div>
+                            </div>
+                            
+                            <button id="btn-save-hazard" class="btn btn-primary" disabled>Spara hinder på kartan</button>
+                        </div>
+                    </div>
+
+                    <!-- List of active hazards -->
+                    <div class="card list-card">
+                        <h4>Rapporterade hinder (Sista 5 dagarna)</h4>
+                        <div class="hazard-list" id="hazard-list-container">
+                            <p class="empty-list-text">Inga hinder rapporterade ännu. Var först med att varna andra!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Emergency SOS -->
+                <div class="tab-panel" id="tab-emergency">
+                    <div class="card sos-card">
+                        <div class="sos-icon-container">
+                            <span class="sos-pulse"></span>
+                            <button class="sos-btn" id="btn-sos-trigger">
+                                <span>SOS</span>
+                            </button>
+                        </div>
+                        <h3>Jourveterinär & Djursjukhus</h3>
+                        <p class="sos-desc">Om en olycka sker eller om hästen blir akut sjuk under transporten. Klicka på SOS-knappen ovan för att söka efter närmaste godkända akutklinik baserat på din position.</p>
+                    </div>
+
+                    <!-- SOS Results -->
+                    <div id="emergency-results" class="results-container hidden">
+                        <div class="results-title">
+                            <h4>Närmaste hästakutkliniker</h4>
+                            <span class="badge badge-danger">Sorterat efter närhet</span>
+                        </div>
+                        
+                        <div class="emergency-list" id="emergency-list-container">
+                            <!-- Loop items -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Footer -->
+            <footer class="sidebar-footer">
+                <span>Hästtransport-GPS MVP v1.0.0</span>
+                <span>•</span>
+                <a href="#" id="btn-reset-app">Nollställ data</a>
+            </footer>
+        </aside>
+
+        <!-- Floating Map Controls Overlay (UX Upgrade) -->
+        <div class="map-controls">
+            <button class="map-ctrl-btn" id="ctrl-gps" title="Hitta mig">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+                </svg>
+            </button>
+            <button class="map-ctrl-btn" id="ctrl-clear" title="Rensa karta">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Map Container -->
+        <main class="map-container-wrapper">
+            <div id="map"></div>
+            
+            <!-- Map Toast Warning -->
+            <div id="map-toast" class="map-toast hidden">
+                <span class="toast-icon">📍</span>
+                <span class="toast-message">Klicka på kartan för att välja start/slut eller placera hinder</span>
+                <button class="toast-close" id="btn-toast-close">×</button>
+            </div>
+        </main>
+        
+        <!-- Google Maps-like Navigation HUD Overlay -->
+        <div id="navigation-hud" class="navigation-hud hidden">
+            <!-- Top Green Banner: Current Turn Instruction -->
+            <div class="nav-top-banner">
+                <div class="nav-turn-icon" id="nav-instruction-icon">⬆️</div>
+                <div class="nav-instruction-details">
+                    <span class="nav-next-step" id="nav-next-text">Fortsätt rakt fram</span>
+                    <span class="nav-next-dist" id="nav-next-dist">om 500 m</span>
+                </div>
+            </div>
+
+            <!-- Bottom white card: Stats & End Navigation Button -->
+            <div class="nav-bottom-card">
+                <div class="nav-stats">
+                    <div class="nav-stat-time" id="nav-time-remaining">1h 45m</div>
+                    <div class="nav-stat-sub">
+                        <span id="nav-dist-remaining">120 km</span>
+                        <span class="dot">•</span>
+                        <span id="nav-eta">Ankomst 22:15</span>
+                    </div>
+                </div>
+                <button id="btn-end-navigation" class="btn-end-nav">
+                    <span>Avsluta</span>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- App Database layer -->
+    <script src="db.js"></script>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
