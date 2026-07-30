@@ -1044,6 +1044,19 @@ async function loadHazards() {
     }
 }
 
+function escapeHTML(str) {
+    if (!str) return "";
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
 function renderHazardsOnMap() {
     mapHazardMarkers.forEach(m => map.removeLayer(m));
     mapHazardMarkers = [];
@@ -1076,7 +1089,7 @@ function renderHazardsOnMap() {
         marker.bindPopup(`
             <div style="font-family: var(--font-body)">
                 <h4>${iconSymbol} ${SwedishType}</h4>
-                <p>${hazard.comment}</p>
+                <p>${escapeHTML(hazard.comment)}</p>
                 <div style="font-size: 10px; color: var(--text-secondary);">Rapporterad: ${hazard.timestamp}</div>
             </div>
         `);
@@ -1119,7 +1132,7 @@ function renderHazardsList() {
             <div class="hazard-icon-box">${hazardEmojis[hazard.type] || "⚠️"}</div>
             <div class="hazard-info">
                 <h5>${SwedishTypes[hazard.type] || "Hinder"}</h5>
-                <p>${hazard.comment}</p>
+                <p>${escapeHTML(hazard.comment)}</p>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
                     <span style="color: var(--text-secondary); font-size: 10px;">Datum: ${hazard.timestamp}</span>
                     <div class="hazard-actions">
