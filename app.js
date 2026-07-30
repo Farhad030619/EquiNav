@@ -1471,10 +1471,33 @@ let totalTowingSecondsForNav = 0;
 let destinationCoordinates = null;
 let isRerouting = false;
 
+let navCurrentCoordinates = null;
+let nearestClinicHUD = null;
+
 function initNavigation() {
     const startNavBtn = document.getElementById("btn-start-navigation");
     const simulateNavBtn = document.getElementById("btn-simulate-navigation");
     const endNavBtn = document.getElementById("btn-end-navigation");
+
+    // HUD overlays
+    const topBannerBtn = document.getElementById("nav-top-banner-btn");
+    const directionsPanel = document.getElementById("nav-directions-panel");
+    const expandArrow = document.getElementById("nav-expand-arrow");
+    const hud = document.getElementById("navigation-hud");
+
+    // Quick hazard reporting elements
+    const navHazardBtn = document.getElementById("btn-nav-hazard");
+    const quickHazardModal = document.getElementById("quick-hazard-modal");
+    const quickHazardCloseBtn = document.getElementById("btn-quick-hazard-close");
+    const quickHazardSaveBtn = document.getElementById("btn-quick-hazard-save");
+    const quickHazardPosText = document.getElementById("quick-hazard-pos-text");
+
+    // Quick SOS elements
+    const navSosBtn = document.getElementById("btn-nav-sos");
+    const quickSosCard = document.getElementById("quick-sos-card");
+    const quickSosCloseBtn = document.getElementById("btn-quick-sos-close");
+    const quickSosCallBtn = document.getElementById("btn-quick-sos-call");
+    const quickSosShowBtn = document.getElementById("btn-quick-sos-show");
 
     if (startNavBtn) {
         startNavBtn.addEventListener("click", () => {
@@ -1499,6 +1522,143 @@ function initNavigation() {
     if (endNavBtn) {
         endNavBtn.addEventListener("click", () => {
             endNavigation();
+        });
+    }
+
+    // Toggle directions dropdown list
+    if (topBannerBtn && directionsPanel) {
+        topBannerBtn.addEventListener("click", () => {
+            directionsPanel.classList.toggle("hidden");
+            hud.classList.toggle("directions-expanded");
+            if (directionsPanel.classList.contains("hidden")) {
+                if (expandArrow) expandArrow.innerText = "▼";
+            } else {
+                if (expandArrow) expandArrow.innerText = "▲";
+            }
+        });
+    }
+
+    // Quick hazard dialog triggers
+    if (navHazardBtn) {
+        navHazardBtn.addEventListener("click", () => {
+            if (!navigationCarMarker) return;
+            const currentPt = navigationCarMarker.getLatLng();
+            navCurrentCoordinates = [currentPt.lat, currentPt.lng];
+            
+            if (quickHazardPosText) {
+                quickHazardPosText.innerText = `${currentPt.lat.toFixed(5)}, ${currentPt.lng.toFixed(5)}`;
+            }
+            
+            quickHazardModal.classList.remove("hidden");
+        });
+    }
+
+    if (quickHazardCloseBtn) {
+        quickHazardCloseBtn.addEventListener("click", () => {
+            quickHazardModal.classList.add("hidden");
+        });
+    }
+
+    if (quickHazardSaveBtn) {
+        quickHazardSaveBtn.addEventListener("click", async () => {
+            if (!navCurrentCoordinates) return;
+            const type = document.getElementById("quick-hazard-type").value;
+            const comment = document.getElementById("quick-hazard-comment").value.trim();
+            
+            quickHazardSaveBtn.setAttribute("disabled", "true");
+            quickHazardSaveBtn.innerText = "Sparar...";
+            
+            const newHazard = {
+                id: "haz-" + Date.now(),
+                lat: navCurrentCoordinates[0],
+                lng: navCurrentCoordinates[1],
+                type,
+                comment: comment || "Vägvarning rapporterad under navigering",
+                timestamp: new Date().toLocaleDateString("sv-SE")
+            };
+            
+            try {
+                await db.saveHazard(newHazard);
+                localHazards.push(newHazard);
+                renderHazardsOnMap();
+                renderHazardsList();
+                
+                document.getElementById("quick-hazard-comment").value = "";
+                quickHazardModal.classList.add("hidden");
+                showToast("Hinder sparades på din position!", "🚧");
+            } catch (e) {
+                alert("Kunde inte spara hindret. Försök igen.");
+            } finally {
+                quickHazardSaveBtn.removeAttribute("disabled");
+                quickHazardSaveBtn.innerText = "Spara hinder på din position";
+            }
+        });
+    }
+
+    // Quick SOS card triggers
+    if (navSosBtn) {
+        navSosBtn.addEventListener("click", async () => {
+            if (!navigationCarMarker) return;
+            const currentPt = navigationCarMarker.getLatLng();
+            const clinics = await db.getEmergencyClinics();
+            
+            const calculatedClinics = clinics.map(clinic => {
+                const distance = calculateDistance(currentPt.lat, currentPt.lng, clinic.coords[0], clinic.coords[1]);
+                return {
+                    ...clinic,
+                    distance: distance
+                };
+            });
+            
+            calculatedClinics.sort((a, b) => a.distance - b.distance);
+            
+            if (calculatedClinics.length > 0) {
+                nearestClinicHUD = calculatedClinics[0];
+                
+                document.getElementById("quick-sos-dist").innerText = `${nearestClinicHUD.distance.toFixed(1)} km`;
+                document.getElementById("quick-sos-name").innerText = nearestClinicHUD.name;
+                document.getElementById("quick-sos-address").innerText = nearestClinicHUD.address;
+                document.getElementById("quick-sos-tel").innerText = nearestClinicHUD.tel;
+                document.getElementById("quick-sos-turnspace").innerText = nearestClinicHUD.turnspace;
+                
+                if (quickSosCallBtn) {
+                    quickSosCallBtn.setAttribute("href", `tel:${nearestClinicHUD.tel.replace(/\s+/g, '')}`);
+                }
+                
+                quickSosCard.classList.remove("hidden");
+            }
+        });
+    }
+
+    if (quickSosCloseBtn) {
+        quickSosCloseBtn.addEventListener("click", () => {
+            quickSosCard.classList.add("hidden");
+        });
+    }
+
+    if (quickSosShowBtn) {
+        quickSosShowBtn.addEventListener("click", () => {
+            if (!nearestClinicHUD) return;
+            
+            if (window.emergencyMarker) {
+                map.removeLayer(window.emergencyMarker);
+            }
+            
+            window.emergencyMarker = L.marker(nearestClinicHUD.coords, {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                })
+            }).addTo(map);
+            
+            window.emergencyMarker.bindPopup(`🚨 <strong>${nearestClinicHUD.name}</strong>`).openPopup();
+            map.setView(nearestClinicHUD.coords, 12);
+            quickSosCard.classList.add("hidden");
+            showToast(`Visar ${nearestClinicHUD.name} på kartan`, "🚨");
         });
     }
 }
@@ -1698,12 +1858,14 @@ function updateNavigationForCoordinates(currentPt) {
     // Hitta nästa faktiska sväng/rondell framför oss
     let nextTurnStep = null;
     let nextTurnDist = 0;
+    let nextTurnIndexInRoute = -1;
     for (let i = currentStepIndex; i < currentRouteSteps.length; i++) {
         const step = currentRouteSteps[i];
         const modifier = step.maneuver.modifier;
         const type = step.maneuver.type;
         if (type.includes("turn") || type.includes("roundabout") || modifier === "left" || modifier === "right" || type === "arrive") {
             nextTurnStep = step;
+            nextTurnIndexInRoute = i;
             break;
         }
     }
@@ -1722,6 +1884,57 @@ function updateNavigationForCoordinates(currentPt) {
         document.getElementById("nav-instruction-icon").innerText = "⬆️";
         document.getElementById("nav-next-text").innerText = "Fortsätt på färdvägen";
         document.getElementById("nav-next-dist").innerText = "";
+    }
+
+    // Hitta näst-näst sväng/rondell (secondTurnStep) efter nextTurnStep
+    let secondTurnStep = null;
+    if (nextTurnIndexInRoute !== -1) {
+        for (let i = nextTurnIndexInRoute + 1; i < currentRouteSteps.length; i++) {
+            const step = currentRouteSteps[i];
+            const modifier = step.maneuver.modifier;
+            const type = step.maneuver.type;
+            if (type.includes("turn") || type.includes("roundabout") || modifier === "left" || modifier === "right" || type === "arrive") {
+                secondTurnStep = step;
+                break;
+            }
+        }
+    }
+
+    const subBanner = document.getElementById("nav-sub-banner");
+    const hud = document.getElementById("navigation-hud");
+    
+    if (secondTurnStep) {
+        const subInst = getSwedishInstruction(secondTurnStep);
+        document.getElementById("nav-sub-icon").innerText = subInst.icon;
+        document.getElementById("nav-sub-text").innerText = secondTurnStep.name || "huvudväg";
+        subBanner.classList.remove("hidden");
+        hud.classList.add("has-sub-banner");
+    } else {
+        subBanner.classList.add("hidden");
+        hud.classList.remove("has-sub-banner");
+    }
+
+    // Uppdatera listan över kommande köranvisningar (max 5)
+    const expandedList = document.getElementById("nav-directions-list-expanded");
+    if (expandedList) {
+        expandedList.innerHTML = "";
+        let count = 0;
+        for (let i = currentStepIndex; i < currentRouteSteps.length; i++) {
+            const step = currentRouteSteps[i];
+            const inst = getSwedishInstruction(step);
+            const distStr = step.distance > 1000 ? `${(step.distance/1000).toFixed(1)} km` : `${step.distance.toFixed(0)} m`;
+            
+            const li = document.createElement("li");
+            li.innerHTML = `<span style="font-size: 18px;">${inst.icon}</span> 
+                            <div>
+                                <strong>${inst.text}</strong> 
+                                <span style="color: var(--text-secondary); margin-left: 5px;">(${distStr})</span>
+                            </div>`;
+            expandedList.appendChild(li);
+            
+            count++;
+            if (count >= 5) break;
+        }
     }
 }
 
@@ -1809,9 +2022,32 @@ function endNavigation() {
         navigationCarMarker = null;
     }
 
+    if (window.emergencyMarker) {
+        map.removeLayer(window.emergencyMarker);
+        window.emergencyMarker = null;
+    }
+
     // Ta bort navigeringsläge
     document.querySelector(".app-container").classList.remove("navigating-mode");
-    document.getElementById("navigation-hud").classList.add("hidden");
+    const hud = document.getElementById("navigation-hud");
+    if (hud) {
+        hud.classList.add("hidden");
+        hud.classList.remove("directions-expanded");
+        hud.classList.remove("has-sub-banner");
+    }
+
+    // Dölj alla modaler och dropdowns
+    const directionsPanel = document.getElementById("nav-directions-panel");
+    const quickSosCard = document.getElementById("quick-sos-card");
+    const quickHazardModal = document.getElementById("quick-hazard-modal");
+    const expandArrow = document.getElementById("nav-expand-arrow");
+    const subBanner = document.getElementById("nav-sub-banner");
+
+    if (directionsPanel) directionsPanel.classList.add("hidden");
+    if (quickSosCard) quickSosCard.classList.add("hidden");
+    if (quickHazardModal) quickHazardModal.classList.add("hidden");
+    if (subBanner) subBanner.classList.add("hidden");
+    if (expandArrow) expandArrow.innerText = "▼";
     
     showToast("Navigering avslutad.", "🧹");
     

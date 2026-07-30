@@ -447,11 +447,88 @@
         <!-- Google Maps-like Navigation HUD Overlay -->
         <div id="navigation-hud" class="navigation-hud hidden">
             <!-- Top Green Banner: Current Turn Instruction -->
-            <div class="nav-top-banner">
+            <div class="nav-top-banner" id="nav-top-banner-btn" style="cursor: pointer;" title="Visa kommande svängar">
                 <div class="nav-turn-icon" id="nav-instruction-icon">⬆️</div>
                 <div class="nav-instruction-details">
                     <span class="nav-next-step" id="nav-next-text">Fortsätt rakt fram</span>
                     <span class="nav-next-dist" id="nav-next-dist">om 500 m</span>
+                </div>
+                <!-- Expansion arrow indicator -->
+                <div class="nav-expand-indicator" id="nav-expand-arrow">▼</div>
+            </div>
+
+            <!-- Secondary Banner: Next Step Preview -->
+            <div class="nav-sub-banner hidden" id="nav-sub-banner">
+                <div class="nav-sub-icon" id="nav-sub-icon">➡️</div>
+                <div class="nav-sub-details">
+                    <span>Sedan </span><strong id="nav-sub-text">Sveavägen</strong>
+                </div>
+            </div>
+
+            <!-- Expanded Directions Panel -->
+            <div class="nav-directions-panel hidden" id="nav-directions-panel">
+                <h4>Kommande köranvisningar</h4>
+                <ul class="nav-directions-list" id="nav-directions-list-expanded">
+                    <!-- Dynamic directions list -->
+                </ul>
+            </div>
+
+            <!-- Right-side Floating Action Buttons -->
+            <div class="nav-floating-actions">
+                <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder live på din position">
+                    <span>🚧</span>
+                </button>
+                <button class="nav-action-btn btn-danger" id="btn-nav-sos" title="Hitta akut hästklinik nära dig">
+                    <span>🚨</span>
+                </button>
+            </div>
+
+            <!-- Quick SOS Clinic Info Card (Floating Overlay above bottom stats card) -->
+            <div id="quick-sos-card" class="quick-sos-card hidden">
+                <button class="quick-card-close" id="btn-quick-sos-close">×</button>
+                <div class="quick-sos-header">
+                    <h5>🚨 Närmaste Djursjukhus</h5>
+                    <span class="quick-sos-dist" id="quick-sos-dist">-- km</span>
+                </div>
+                <h4 id="quick-sos-name">Kliniknamn</h4>
+                <p id="quick-sos-address">Adress...</p>
+                <div class="quick-sos-details">
+                    <div>📞 <strong>Jour:</strong> <span id="quick-sos-tel">--</span></div>
+                    <div>🔄 <strong>Vändyta:</strong> <span id="quick-sos-turnspace">--</span></div>
+                </div>
+                <div class="quick-sos-btns">
+                    <a href="#" id="btn-quick-sos-call" class="btn btn-primary btn-sm btn-sos-call-hud">Ring jour</a>
+                    <button id="btn-quick-sos-show" class="btn btn-secondary btn-sm">Visa på karta</button>
+                </div>
+            </div>
+
+            <!-- Quick Hazard Report Modal Overlay -->
+            <div id="quick-hazard-modal" class="quick-hazard-modal hidden">
+                <div class="quick-hazard-content">
+                    <button class="quick-card-close" id="btn-quick-hazard-close">×</button>
+                    <h3>🚧 Rapportera Hinder Live</h3>
+                    <p class="help-text">Rapporterar ett hinder på din nuvarande GPS-position så att andra varnas.</p>
+                    
+                    <div class="form-group">
+                        <label for="quick-hazard-type">Hindertyp</label>
+                        <select id="quick-hazard-type">
+                            <option value="pothole">🕳️ Gupp / Dålig asfalt</option>
+                            <option value="narrow">🚧 Trång passage / Mötesproblem</option>
+                            <option value="noturn">🛑 Ingen vändplats / Återvändsgränd</option>
+                            <option value="low">🌲 Låga grenar / Lågt hinder</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label for="quick-hazard-comment">Kommentar</label>
+                        <textarea id="quick-hazard-comment" rows="2" placeholder="T.ex. Mycket rullgrus i svängen..."></textarea>
+                    </div>
+
+                    <div class="quick-hazard-position-indicator" style="margin: 10px 0; font-size: 11px; color: var(--text-secondary);">
+                        📍 Position: <span id="quick-hazard-pos-text" style="font-weight: bold; color: var(--accent-color);">Hämtar GPS...</span>
+                    </div>
+
+                    <button id="btn-quick-hazard-save" class="btn btn-primary">Spara hinder på din position</button>
                 </div>
             </div>
 
@@ -470,7 +547,6 @@
                 </button>
             </div>
         </div>
-        
     </div>
 
     <!-- Supabase JS Library -->
