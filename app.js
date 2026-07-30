@@ -576,6 +576,10 @@ function renderCalculatorResults(result) {
 function initRoutePlanner() {
     const calcRouteBtn = document.getElementById("btn-find-route");
     
+    // Aktivera adressförslag (autocomplete)
+    setupAutocomplete("input-start", "start");
+    setupAutocomplete("input-end", "end");
+    
     document.querySelectorAll(".shortcut-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             document.getElementById("input-start").value = btn.dataset.start;
@@ -1662,4 +1666,85 @@ function endNavigation() {
     if (routeLine) {
         map.fitBounds(routeLine.getBounds(), { padding: [45, 45] });
     }
+}
+
+// Kopplar upp adress-autocomplete med debounced API-förfrågningar till Nominatim (Sverige)
+function setupAutocomplete(inputId, type) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Skapa förslagscontainer om den inte redan finns
+    let suggestionsContainer = input.parentNode.querySelector(".autocomplete-suggestions");
+    if (!suggestionsContainer) {
+        suggestionsContainer = document.createElement("div");
+        suggestionsContainer.className = "autocomplete-suggestions hidden";
+        // Placera den inuti föräldraelementet
+        const parentFormGroup = input.closest(".form-group");
+        if (parentFormGroup) {
+            parentFormGroup.appendChild(suggestionsContainer);
+        } else {
+            input.parentNode.appendChild(suggestionsContainer);
+        }
+    }
+
+    let debounceTimeout = null;
+
+    input.addEventListener("input", () => {
+        const val = input.value.trim();
+        clearTimeout(debounceTimeout);
+
+        if (val.length < 3) {
+            suggestionsContainer.classList.add("hidden");
+            suggestionsContainer.innerHTML = "";
+            return;
+        }
+
+        debounceTimeout = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=se&limit=5`)
+                .then(res => res.json())
+                .then(data => {
+                    suggestionsContainer.innerHTML = "";
+                    if (!data || data.length === 0) {
+                        suggestionsContainer.classList.add("hidden");
+                        return;
+                    }
+
+                    data.forEach(item => {
+                        const div = document.createElement("div");
+                        div.className = "suggestion-item";
+                        
+                        // Formatera visningsnamnet (ta bort t.ex. ", Sverige" för renare UI)
+                        const displayName = item.display_name.replace(", Sverige", "").replace(", Sweden", "");
+                        div.innerHTML = `📍 <span>${displayName}</span>`;
+                        
+                        div.addEventListener("click", () => {
+                            input.value = displayName;
+                            suggestionsContainer.classList.add("hidden");
+
+                            // Uppdatera kartans markör för start eller slut
+                            const lat = parseFloat(item.lat);
+                            const lng = parseFloat(item.lon);
+                            setRouteMarker(type, lat, lng);
+                            
+                            // Panorera kartan dit
+                            map.setView([lat, lng], 13);
+                        });
+
+                        suggestionsContainer.appendChild(div);
+                    });
+
+                    suggestionsContainer.classList.remove("hidden");
+                })
+                .catch(err => {
+                    console.error("app: Autocomplete-fel:", err);
+                });
+        }, 300); // 300ms debounce för att inte överbelasta Nominatim
+    });
+
+    // Dölj förslagen om man klickar någon annanstans på sidan
+    document.addEventListener("click", (e) => {
+        if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            suggestionsContainer.classList.add("hidden");
+        }
+    });
 }
