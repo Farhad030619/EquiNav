@@ -56,9 +56,10 @@ function initMap() {
             position: 'topright'
         }).addTo(map);
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> bidragsgivare',
-            maxZoom: 19
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
         }).addTo(map);
 
         // Klicka på kartan
@@ -198,62 +199,166 @@ function initBottomSheet() {
     const dragHandle = document.getElementById("bottom-sheet-drag");
     const sidebar = document.getElementById("app-sidebar");
     const header = document.querySelector(".sidebar-header");
+    const sidebarContent = document.querySelector(".sidebar-content");
 
+    if (!sidebar) return;
+
+    let touchStartY = 0;
+    let startTranslateY = 0;
+    let isDragging = false;
+    let currentTranslateY = 0;
+
+    // Helper to get current active state name from class list
+    function getCurrentState() {
+        if (sidebar.classList.contains("state-expanded")) return "expanded";
+        if (sidebar.classList.contains("state-collapsed")) return "collapsed";
+        return "peek"; // Default is peek
+    }
+
+    // Helper to parse current translateY from DOMMatrix
+    function getTranslateY() {
+        const style = window.getComputedStyle(sidebar);
+        const transform = style.transform || style.webkitTransform;
+        if (!transform || transform === 'none') return 0;
+        try {
+            const matrix = new DOMMatrix(transform);
+            return matrix.f;
+        } catch (e) {
+            const parts = transform.split(',');
+            if (parts.length >= 6) {
+                return parseFloat(parts[5]);
+            }
+            return 0;
+        }
+    }
+
+    // Single click toggler (useful fallback/click handler)
     const toggleBottomSheet = () => {
-        if (sidebar.classList.contains("state-collapsed")) {
-            sidebar.className = "sidebar state-peek";
-        } else if (sidebar.classList.contains("state-peek")) {
-            sidebar.className = "sidebar state-expanded";
+        const state = getCurrentState();
+        if (state === "collapsed") {
+            expandBottomSheet("peek");
+        } else if (state === "peek") {
+            expandBottomSheet("expanded");
         } else {
-            sidebar.className = "sidebar state-collapsed";
+            expandBottomSheet("collapsed");
         }
     };
 
-    if (sidebar) {
-        // Tillåt klick på både handtaget och headern för att växla läge
-        if (dragHandle) dragHandle.addEventListener("click", toggleBottomSheet);
-        if (header) header.addEventListener("click", (e) => {
-            // Undvik att klicka på tabbar/knappar av misstag
-            if (!e.target.closest("button") && !e.target.closest("a")) {
+    if (dragHandle) dragHandle.addEventListener("click", toggleBottomSheet);
+    if (header) {
+        header.addEventListener("click", (e) => {
+            if (!e.target.closest("button") && !e.target.closest("a") && !e.target.closest("nav")) {
                 toggleBottomSheet();
             }
         });
+    }
 
-        // Avancerat: Swipe-upp och swipe-ner gester på mobilen (likt Google Maps)
-        let touchStartY = 0;
-        let touchEndY = 0;
+    // Touch event listeners for dragging
+    sidebar.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
+        const state = getCurrentState();
+        
+        // Determine if we should drag
+        const isHeaderTouch = e.target.closest("#bottom-sheet-drag") || e.target.closest(".sidebar-header") || e.target.closest(".sidebar-tabs") || e.target.closest(".sidebar-footer");
+        const isContentTouch = e.target.closest(".sidebar-content");
 
-        sidebar.addEventListener("touchstart", (e) => {
-            if (e.target.closest("#bottom-sheet-drag") || e.target.closest(".sidebar-header")) {
-                touchStartY = e.touches[0].clientY;
+        if (isHeaderTouch || (isContentTouch && state !== "expanded")) {
+            // Initiate drag
+            touchStartY = touch.clientY;
+            startTranslateY = getTranslateY();
+            isDragging = true;
+            sidebar.classList.add("dragging");
+        } else if (isContentTouch && state === "expanded" && sidebarContent.scrollTop <= 0) {
+            // Initiate drag down from top scroll position
+            touchStartY = touch.clientY;
+            startTranslateY = getTranslateY();
+            isDragging = true;
+        }
+    }, { passive: true });
+
+    sidebar.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        
+        const touch = e.touches[0];
+        const currentY = touch.clientY;
+        const deltaY = currentY - touchStartY;
+        const state = getCurrentState();
+
+        // If we started at expanded scrollTop <= 0 and are dragging UP, cancel sheet dragging
+        if (state === "expanded" && !sidebar.classList.contains("dragging")) {
+            if (deltaY < 0) {
+                isDragging = false;
+                return;
+            } else if (deltaY > 0) {
+                sidebar.classList.add("dragging");
             }
-        }, { passive: true });
+        }
 
-        sidebar.addEventListener("touchend", (e) => {
-            if (!touchStartY) return;
-            touchEndY = e.changedTouches[0].clientY;
-            const diffY = touchStartY - touchEndY; // Positivt = swipe uppåt, negativt = swipe neråt
+        if (sidebar.classList.contains("dragging")) {
+            if (e.cancelable) e.preventDefault();
 
-            if (Math.abs(diffY) > 50) { // Tröskel på 50px
-                if (diffY > 0) {
-                    // Swipe uppåt -> dra upp sheeten
-                    if (sidebar.classList.contains("state-collapsed")) {
-                        expandBottomSheet("peek");
-                    } else if (sidebar.classList.contains("state-peek")) {
-                        expandBottomSheet("expanded");
-                    }
-                } else {
-                    // Swipe neråt -> dra ner sheeten
-                    if (sidebar.classList.contains("state-expanded")) {
-                        expandBottomSheet("peek");
-                    } else if (sidebar.classList.contains("state-peek")) {
-                        expandBottomSheet("collapsed");
+            let targetTranslateY = startTranslateY + deltaY;
+            const sidebarHeight = sidebar.offsetHeight;
+            const maxTranslate = sidebarHeight - 140;
+
+            // Apply rubber banding beyond limits
+            if (targetTranslateY < 0) {
+                targetTranslateY = targetTranslateY * 0.2;
+            } else if (targetTranslateY > maxTranslate) {
+                targetTranslateY = maxTranslate + (targetTranslateY - maxTranslate) * 0.2;
+            }
+
+            sidebar.style.transform = `translateY(${targetTranslateY}px)`;
+            currentTranslateY = targetTranslateY;
+        }
+    }, { passive: false });
+
+    sidebar.addEventListener("touchend", (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        if (sidebar.classList.contains("dragging")) {
+            sidebar.classList.remove("dragging");
+            sidebar.style.transform = ""; // Remove inline style to let CSS transition take over
+
+            const sidebarHeight = sidebar.offsetHeight;
+            const deltaY = e.changedTouches[0].clientY - touchStartY;
+
+            const peekTranslate = sidebarHeight * 0.45;
+            const collapsedTranslate = sidebarHeight - 140;
+
+            const snapPoints = {
+                "expanded": 0,
+                "peek": peekTranslate,
+                "collapsed": collapsedTranslate
+            };
+
+            const state = getCurrentState();
+            let finalState = state;
+
+            // Simple velocity/direction intent combined with closest point
+            if (Math.abs(deltaY) > 60) {
+                if (deltaY > 0) { // Swiped down
+                    finalState = (state === "expanded") ? "peek" : "collapsed";
+                } else { // Swiped up
+                    finalState = (state === "collapsed") ? "peek" : "expanded";
+                }
+            } else {
+                let minDiff = Infinity;
+                for (const [s, val] of Object.entries(snapPoints)) {
+                    const diff = Math.abs(currentTranslateY - val);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        finalState = s;
                     }
                 }
             }
-            touchStartY = 0;
-        }, { passive: true });
-    }
+
+            expandBottomSheet(finalState);
+        }
+
+        touchStartY = 0;
+    });
 
     // Nollställningsknapp i sidfoten
     const resetBtn = document.getElementById("btn-reset-app");
