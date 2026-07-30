@@ -197,26 +197,74 @@ function initTabs() {
 function initBottomSheet() {
     const dragHandle = document.getElementById("bottom-sheet-drag");
     const sidebar = document.getElementById("app-sidebar");
+    const header = document.querySelector(".sidebar-header");
 
-    if (dragHandle && sidebar) {
-        dragHandle.addEventListener("click", () => {
-            if (sidebar.classList.contains("state-collapsed")) {
-                sidebar.className = "sidebar state-peek";
-            } else if (sidebar.classList.contains("state-peek")) {
-                sidebar.className = "sidebar state-expanded";
-            } else {
-                sidebar.className = "sidebar state-collapsed";
+    const toggleBottomSheet = () => {
+        if (sidebar.classList.contains("state-collapsed")) {
+            sidebar.className = "sidebar state-peek";
+        } else if (sidebar.classList.contains("state-peek")) {
+            sidebar.className = "sidebar state-expanded";
+        } else {
+            sidebar.className = "sidebar state-collapsed";
+        }
+    };
+
+    if (sidebar) {
+        // Tillåt klick på både handtaget och headern för att växla läge
+        if (dragHandle) dragHandle.addEventListener("click", toggleBottomSheet);
+        if (header) header.addEventListener("click", (e) => {
+            // Undvik att klicka på tabbar/knappar av misstag
+            if (!e.target.closest("button") && !e.target.closest("a")) {
+                toggleBottomSheet();
+            }
+        });
+
+        // Avancerat: Swipe-upp och swipe-ner gester på mobilen (likt Google Maps)
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        sidebar.addEventListener("touchstart", (e) => {
+            if (e.target.closest("#bottom-sheet-drag") || e.target.closest(".sidebar-header")) {
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        sidebar.addEventListener("touchend", (e) => {
+            if (!touchStartY) return;
+            touchEndY = e.changedTouches[0].clientY;
+            const diffY = touchStartY - touchEndY; // Positivt = swipe uppåt, negativt = swipe neråt
+
+            if (Math.abs(diffY) > 50) { // Tröskel på 50px
+                if (diffY > 0) {
+                    // Swipe uppåt -> dra upp sheeten
+                    if (sidebar.classList.contains("state-collapsed")) {
+                        expandBottomSheet("peek");
+                    } else if (sidebar.classList.contains("state-peek")) {
+                        expandBottomSheet("expanded");
+                    }
+                } else {
+                    // Swipe neråt -> dra ner sheeten
+                    if (sidebar.classList.contains("state-expanded")) {
+                        expandBottomSheet("peek");
+                    } else if (sidebar.classList.contains("state-peek")) {
+                        expandBottomSheet("collapsed");
+                    }
+                }
+            }
+            touchStartY = 0;
+        }, { passive: true });
+    }
+
+    // Nollställningsknapp i sidfoten
+    const resetBtn = document.getElementById("btn-reset-app");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (confirm("Vill du nollställa all inmatad data?")) {
+                resetRouteAndInputs();
             }
         });
     }
-
-    // Reset app button in footer
-    document.getElementById("btn-reset-app").addEventListener("click", (e) => {
-        e.preventDefault();
-        if (confirm("Vill du nollställa all inmatad data?")) {
-            resetRouteAndInputs();
-        }
-    });
 }
 
 function expandBottomSheet(state) {
