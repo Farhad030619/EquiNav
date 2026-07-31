@@ -1841,6 +1841,19 @@ function updateNavigationForCoordinates(currentPt) {
         return; // Avbryt denna uppdatering, då en ny rutt genereras
     }
 
+    // Hitta den köranvisning som vi är närmast för tillfället
+    let currentStepIndex = 0;
+    let minStepDistance = Infinity;
+
+    currentRouteSteps.forEach((step, idx) => {
+        const stepLoc = [step.maneuver.location[1], step.maneuver.location[0]];
+        const dist = calculateDistance(currentPt[0], currentPt[1], stepLoc[0], stepLoc[1]) * 1000;
+        if (dist < minStepDistance) {
+            minStepDistance = dist;
+            currentStepIndex = idx;
+        }
+    });
+
     // Beräkna resterande distans (summa av kvarvarande koordinat-sträckor)
     let remainingMeters = 0;
     for (let i = closestIdx; i < currentRoutePoints.length - 1; i++) {
@@ -1887,19 +1900,6 @@ function updateNavigationForCoordinates(currentPt) {
     now.setSeconds(now.getSeconds() + remainingSeconds);
     const etaStr = now.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
     document.getElementById("nav-eta").innerText = `Ankomst ${etaStr}`;
-
-    // Hitta den köranvisning som vi är närmast för tillfället
-    let currentStepIndex = 0;
-    let minStepDistance = Infinity;
-
-    currentRouteSteps.forEach((step, idx) => {
-        const stepLoc = [step.maneuver.location[1], step.maneuver.location[0]];
-        const dist = calculateDistance(currentPt[0], currentPt[1], stepLoc[0], stepLoc[1]) * 1000;
-        if (dist < minStepDistance) {
-            minStepDistance = dist;
-            currentStepIndex = idx;
-        }
-    });
 
     // Hitta nästa faktiska sväng/rondell framför oss
     let nextTurnStep = null;
