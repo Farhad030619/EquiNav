@@ -877,6 +877,10 @@ function generateFallbackRoute(start, end) {
 
 async function displayRouteResults(startName, endName, route) {
     const resultsContainer = document.getElementById("route-results");
+    const routeTitleEl = document.getElementById("route-title");
+    if (routeTitleEl) {
+        routeTitleEl.innerText = `${startName} till ${endName}`;
+    }
     const swappedCoordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
 
     if (routeLine) {
@@ -935,7 +939,7 @@ async function displayRouteResults(startName, endName, route) {
 
     const towingSpeedInput = document.getElementById("input-towing-speed");
     const turnPenaltyInput = document.getElementById("input-turn-penalty");
-    const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 75) : 75;
+    const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 80) : 80;
     
     // Räkna ut bilens snitthastighet för denna rutt (km/h)
     const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
@@ -947,7 +951,7 @@ async function displayRouteResults(startName, endName, route) {
     const towingSpeed = Math.min(averageTowingSpeed, averageTowingSpeed * speedRatio);
     
     const baseTowingHours = distanceKm / towingSpeed;
-    const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 15) : 15);
+    const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 5) : 5);
     let totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
     
     // Dubbelsäkra att släpet tar längre tid än en vanlig bil
@@ -1983,13 +1987,13 @@ function recalculateRouteFromCurrentPosition(currentPt) {
 
         const towingSpeedInput = document.getElementById("input-towing-speed");
         const turnPenaltyInput = document.getElementById("input-turn-penalty");
-        const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 75) : 75;
+        const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 80) : 80;
         const carDuration = newRoute.duration;
         const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
         const speedRatio = Math.min(1.0, carAverageSpeed / 110);
         const towingSpeed = Math.min(averageTowingSpeed, averageTowingSpeed * speedRatio);
         const baseTowingHours = distanceKm / towingSpeed;
-        const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 15) : 15);
+        const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 5) : 5);
         let totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
         
         if (totalTowingSeconds < carDuration) {

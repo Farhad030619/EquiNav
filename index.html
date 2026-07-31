@@ -93,23 +93,6 @@
                             <button class="shortcut-btn" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
                         </div>
                         
-                        <div class="route-advanced-settings" style="margin-top: 12px; margin-bottom: 12px;">
-                            <details>
-                                <summary style="font-size: 13px; color: var(--primary-color); cursor: pointer; font-weight: 500; user-select: none;">
-                                    ⚙️ Avancerade ruttinställningar
-                                </summary>
-                                <div class="advanced-inputs" style="padding-top: 8px; display: flex; gap: 10px;">
-                                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                                        <label for="input-towing-speed" style="font-size: 11px;">Snitthastighet (km/h)</label>
-                                        <input type="number" id="input-towing-speed" value="75" min="40" max="90" style="font-size: 12px; padding: 6px 10px; height: auto;">
-                                    </div>
-                                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                                        <label for="input-turn-penalty" style="font-size: 11px;">Sväng-tillägg (sek)</label>
-                                        <input type="number" id="input-turn-penalty" value="15" min="0" max="60" style="font-size: 12px; padding: 6px 10px; height: auto;">
-                                    </div>
-                                </div>
-                            </details>
-                        </div>
 
                         <button id="btn-find-route" class="btn btn-primary">
                             <span>Beräkna Hästrutt</span>
@@ -149,7 +132,7 @@
                                     <div class="detail-icon">🔄</div>
                                     <div class="detail-text">
                                         <strong>Svängar & rondeller:</strong> <span id="stat-turns">-- st</span>
-                                        <div class="help-text">Varje sväng ger +15s rull-tillägg.</div>
+                                        <div class="help-text">Varje sväng ger +5s rull-tillägg.</div>
                                     </div>
                                 </div>
                                 <div class="detail-item alert-item" id="route-warnings-container">
