@@ -875,6 +875,35 @@ function generateFallbackRoute(start, end) {
     };
 }
 
+function calculateHorseDurationForStep(step, route) {
+    const distanceMeters = step.distance || 0;
+    let stepDuration = step.duration;
+    if (stepDuration === undefined || stepDuration === null || stepDuration <= 0) {
+        const totalDistance = route.distance || 1;
+        const totalDuration = route.duration || 0;
+        stepDuration = (distanceMeters / totalDistance) * totalDuration;
+    }
+    
+    if (stepDuration <= 0) return 0;
+    
+    const carSpeed = distanceMeters / stepDuration; // m/s
+    const maxTowingSpeedMs = 80 / 3.6; // 80 km/h in m/s
+    
+    let horseDuration = stepDuration;
+    if (carSpeed > maxTowingSpeedMs) {
+        horseDuration = distanceMeters / maxTowingSpeedMs;
+    }
+    
+    // Lägg till 5 sekunder turn penalty om step är en sväng eller rondell
+    const type = (step.maneuver && step.maneuver.type) || "";
+    const modifier = (step.maneuver && step.maneuver.modifier) || "";
+    if (type.includes("roundabout") || type.includes("turn") || modifier === "left" || modifier === "right") {
+        horseDuration += 5;
+    }
+    
+    return horseDuration;
+}
+
 async function displayRouteResults(startName, endName, route) {
     const resultsContainer = document.getElementById("route-results");
     const routeTitleEl = document.getElementById("route-title");
@@ -937,26 +966,20 @@ async function displayRouteResults(startName, endName, route) {
     const carMins = Math.floor((carDuration % 3600) / 60);
     document.getElementById("stat-car-eta").innerText = `${carHrs > 0 ? carHrs + 'h ' : ''}${carMins}m`;
 
-    const towingSpeedInput = document.getElementById("input-towing-speed");
-    const turnPenaltyInput = document.getElementById("input-turn-penalty");
-    const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 80) : 80;
-    
-    // Räkna ut bilens snitthastighet för denna rutt (km/h)
-    const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
-    
-    // Realistisk hästtransport-hastighet:
-    // Eftersom man drar ett släp kör man mycket mjukare och långsammare.
-    // Vi skalar släpets snitthastighet baserat på bilens snitthastighet i förhållande till en 110 km/h motorvägsreferens.
-    const speedRatio = Math.min(1.0, carAverageSpeed / 110);
-    const towingSpeed = Math.min(averageTowingSpeed, averageTowingSpeed * speedRatio);
-    
-    const baseTowingHours = distanceKm / towingSpeed;
-    const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 5) : 5);
-    let totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
-    
-    // Dubbelsäkra att släpet tar längre tid än en vanlig bil
-    if (totalTowingSeconds < carDuration) {
-        totalTowingSeconds = carDuration + turnPenaltySeconds;
+    let totalTowingSeconds = 0;
+    if (route.legs && route.legs[0] && route.legs[0].steps) {
+        route.legs[0].steps.forEach(step => {
+            step.horseDuration = calculateHorseDurationForStep(step, route);
+            totalTowingSeconds += step.horseDuration;
+        });
+    } else {
+        // Fallback om steg saknas
+        const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
+        const speedRatio = Math.min(1.0, carAverageSpeed / 110);
+        const towingSpeed = Math.min(80, 80 * speedRatio);
+        const baseTowingHours = distanceKm / towingSpeed;
+        const turnPenaltySeconds = turnCount * 5;
+        totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
     }
     
     const horseHrs = Math.floor(totalTowingSeconds / 3600);
@@ -1827,10 +1850,29 @@ function updateNavigationForCoordinates(currentPt) {
         ) * 1000;
     }
 
-    // Resterande tid baserat på kvoten av resterande distans
-    const totalMeters = route.distance;
-    const remainingRatio = Math.min(1.0, remainingMeters / totalMeters);
-    const remainingSeconds = totalTowingSecondsForNav * remainingRatio;
+    // Resterande tid baserat på segment-specifik hastighet
+    let remainingSeconds = 0;
+    if (currentRouteSteps && currentRouteSteps.length > 0 && currentStepIndex < currentRouteSteps.length) {
+        let futureStepsDistance = 0;
+        for (let i = currentStepIndex + 1; i < currentRouteSteps.length; i++) {
+            futureStepsDistance += currentRouteSteps[i].distance || 0;
+        }
+        
+        const currentStep = currentRouteSteps[currentStepIndex];
+        const currentStepDistance = currentStep.distance || 1;
+        const remainingOnCurrentStep = Math.max(0, Math.min(currentStepDistance, remainingMeters - futureStepsDistance));
+        const currentStepFraction = remainingOnCurrentStep / currentStepDistance;
+        
+        remainingSeconds += currentStepFraction * (currentStep.horseDuration || 0);
+        
+        for (let i = currentStepIndex + 1; i < currentRouteSteps.length; i++) {
+            remainingSeconds += currentRouteSteps[i].horseDuration || 0;
+        }
+    } else {
+        const totalMeters = route.distance || 1;
+        const remainingRatio = Math.min(1.0, remainingMeters / totalMeters);
+        remainingSeconds = totalTowingSecondsForNav * remainingRatio;
+    }
 
     // Uppdatera HUD stats
     const hrs = Math.floor(remainingSeconds / 3600);
@@ -1985,19 +2027,20 @@ function recalculateRouteFromCurrentPosition(currentPt) {
             }
         });
 
-        const towingSpeedInput = document.getElementById("input-towing-speed");
-        const turnPenaltyInput = document.getElementById("input-turn-penalty");
-        const averageTowingSpeed = towingSpeedInput ? (parseInt(towingSpeedInput.value) || 80) : 80;
-        const carDuration = newRoute.duration;
-        const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
-        const speedRatio = Math.min(1.0, carAverageSpeed / 110);
-        const towingSpeed = Math.min(averageTowingSpeed, averageTowingSpeed * speedRatio);
-        const baseTowingHours = distanceKm / towingSpeed;
-        const turnPenaltySeconds = turnCount * (turnPenaltyInput ? (parseInt(turnPenaltyInput.value) || 5) : 5);
-        let totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
-        
-        if (totalTowingSeconds < carDuration) {
-            totalTowingSeconds = carDuration + turnPenaltySeconds;
+        let totalTowingSeconds = 0;
+        if (newRoute.legs && newRoute.legs[0] && newRoute.legs[0].steps) {
+            newRoute.legs[0].steps.forEach(step => {
+                step.horseDuration = calculateHorseDurationForStep(step, newRoute);
+                totalTowingSeconds += step.horseDuration;
+            });
+        } else {
+            const carDuration = newRoute.duration;
+            const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
+            const speedRatio = Math.min(1.0, carAverageSpeed / 110);
+            const towingSpeed = Math.min(80, 80 * speedRatio);
+            const baseTowingHours = distanceKm / towingSpeed;
+            const turnPenaltySeconds = turnCount * 5;
+            totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
         }
         totalTowingSecondsForNav = totalTowingSeconds;
 
