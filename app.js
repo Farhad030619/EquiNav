@@ -33,6 +33,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initHazards();
     initSOS();
     initMapControls();
+    initAboutUsModal();
     
 
     
@@ -2184,3 +2185,37 @@ function setupAutocomplete(inputId, type) {
         }
     });
 }
+
+function initAboutUsModal() {
+    const btnReadAbout = document.getElementById("btn-read-about");
+    const aboutUsModal = document.getElementById("about-us-modal");
+    const btnAboutClose = document.getElementById("btn-about-close");
+    const btnAboutOk = document.getElementById("btn-about-ok");
+
+    if (btnReadAbout && aboutUsModal) {
+        btnReadAbout.addEventListener("click", () => {
+            aboutUsModal.classList.remove("hidden");
+        });
+    }
+
+    if (btnAboutClose && aboutUsModal) {
+        btnAboutClose.addEventListener("click", () => {
+            aboutUsModal.classList.add("hidden");
+        });
+    }
+
+    if (btnAboutOk && aboutUsModal) {
+        btnAboutOk.addEventListener("click", () => {
+            aboutUsModal.classList.add("hidden");
+        });
+    }
+
+    if (aboutUsModal) {
+        aboutUsModal.addEventListener("click", (e) => {
+            if (e.target === aboutUsModal) {
+                aboutUsModal.classList.add("hidden");
+            }
+        });
+    }
+}
+

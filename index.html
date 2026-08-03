@@ -104,7 +104,11 @@
                         <div class="sponsored-badge" style="background-color: var(--primary-color);">Om oss</div>
                         <div class="sponsored-content">
                             <h4>Vårt mål med EquiNav</h4>
-                            <p style="margin-bottom: 0;">Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
+                            <p>Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
+                            <button class="btn-sponsored" id="btn-read-about">
+                                <span>Läs mer om oss</span>
+                                <span>→</span>
+                            </button>
                         </div>
                     </div>
 
@@ -407,6 +411,25 @@
                 <span>•</span>
                 <a href="#" id="btn-reset-app">Nollställ data</a>
             </footer>
+            <!-- About Us Modal Overlay -->
+            <div id="about-us-modal" class="quick-hazard-modal hidden">
+                <div class="quick-hazard-content" style="text-align: left;">
+                    <button class="quick-card-close" id="btn-about-close">×</button>
+                    <h3 style="margin-top: 0; font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--primary-color); display: flex; align-items: center; gap: 8px;">
+                        <span>🐴</span> Om EquiNav
+                    </h3>
+                    <p style="font-size: 14px; line-height: 1.6; color: var(--text-main); margin-top: 12px; margin-bottom: 0;">
+                        EquiNav startades med visionen att göra transporter säkrare och minska stressen på vägarna för både häst och ryttare.
+                    </p>
+                    <p style="font-size: 14px; line-height: 1.6; color: var(--text-main); margin-top: 10px; margin-bottom: 0;">
+                        Genom att kombinera avancerade vägdata (såsom lutning, kurvatur och svängfrekvens) med lagstadgade regler för släp och kunskap om hästens balans, kan vi beräkna den mest skonsamma och säkra körvägen.
+                    </p>
+                    <p style="font-size: 14px; line-height: 1.6; color: var(--text-main); margin-top: 10px; font-weight: 600; margin-bottom: 0;">
+                        Tack för att du kör säkert med oss!
+                    </p>
+                    <button class="btn btn-primary" id="btn-about-ok" style="margin-top: 20px; width: 100%;">Stäng</button>
+                </div>
+            </div>
         </aside>
 
         <!-- Floating Map Controls Overlay (UX Upgrade) -->
