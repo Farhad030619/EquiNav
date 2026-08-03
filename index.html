@@ -21,52 +21,85 @@
         
         <!-- App Sidebar / Bottom Sheet -->
         <aside class="sidebar state-peek" id="app-sidebar">
-            <!-- Drag handle only visible on Mobile -->
-            <div class="bottom-sheet-handle" id="bottom-sheet-drag"></div>
-            
-            <header class="sidebar-header">
-                <div class="logo">
-                    <svg viewBox="0 0 24 24" width="32" height="32" class="logo-icon">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z" fill="currentColor"/>
-                    </svg>
-                    <h1>Hästtransport<span>GPS</span></h1>
-                </div>
-                <p class="tagline">Säkerhet & trygghet för dig och din häst på vägarna</p>
-            </header>
-
-            <!-- Navigation Tabs -->
-            <nav class="sidebar-tabs">
-                <button class="tab-btn active" data-tab="tab-route">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="currentColor"/>
-                    </svg>
-                    <span>Rutt & GPS</span>
-                </button>
-                <button class="tab-btn" data-tab="tab-calculator">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H6v-2h6v2zm0-4H6v-2h6v2zm0-4H6V7h6v2zm7 8h-5v-2h5v2zm0-4h-5v-2h5v2zm0-4h-5V7h5v2z" fill="currentColor"/>
-                    </svg>
-                    <span>Viktkalkyl</span>
-                </button>
-                <button class="tab-btn" data-tab="tab-hazards">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
-                    </svg>
-                    <span>Hinder</span>
-                </button>
-                <button class="tab-btn" data-tab="tab-emergency">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path d="M19 10.5c0 3.58-3.34 7.6-7 10.6-3.66-3-7-7.02-7-10.6C5 6.48 8.13 4 12 4s7 2.48 7 6.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 10h3v-2h-3V7h-2v3H8v2h3v3h2v-3z" fill="currentColor"/>
-                    </svg>
-                    <span>Akut SOS</span>
-                </button>
-            </nav>
+            <!-- Drag handle (hidden in mobile-first layout) -->
+            <div class="bottom-sheet-handle" id="bottom-sheet-drag" style="display: none !important;"></div>
 
             <!-- Tab Contents -->
             <div class="sidebar-content">
                 
+                <!-- Tab: Home / Dashboard -->
+                <div class="tab-panel active" id="tab-home">
+                    <div class="home-header">
+                        <div class="logo">
+                            <svg viewBox="0 0 24 24" width="32" height="32" class="logo-icon" style="color: var(--primary-color);">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2H9V7h6v2z" fill="currentColor"/>
+                            </svg>
+                            <h1 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--text-main); margin: 0;">EquiNav</h1>
+                        </div>
+                        <button class="notification-btn" title="Aviseringar">
+                            <span>🔔</span>
+                        </button>
+                    </div>
+                    
+                    <div class="home-welcome">
+                        <h2>Välkommen!</h2>
+                        <p>Säker och optimerad navigation för dig och din häst.</p>
+                    </div>
+                    
+                    <!-- Service Grid (Row of Buttons) -->
+                    <div class="service-row">
+                        <button class="service-tile active" id="tile-route">
+                            <div class="tile-icon">📍</div>
+                            <div class="tile-label">Rutt & GPS</div>
+                        </button>
+                        <button class="service-tile" id="tile-calculator">
+                            <div class="tile-icon">⚖️</div>
+                            <div class="tile-label">Viktkalkyl</div>
+                        </button>
+                        <button class="service-tile" id="tile-hazards">
+                            <div class="tile-icon">⚠️</div>
+                            <div class="tile-label">Hinder</div>
+                        </button>
+                        <button class="service-tile" id="tile-emergency">
+                            <div class="tile-icon">➕</div>
+                            <div class="tile-label">Akut SOS</div>
+                        </button>
+                    </div>
+                    
+                    <!-- Om oss Banner -->
+                    <div class="card sponsored-card">
+                        <div class="sponsored-badge" style="background-color: var(--primary-color);">Om oss</div>
+                        <div class="sponsored-content">
+                            <h4>Vårt mål med EquiNav</h4>
+                            <p>Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
+                            <button class="btn-sponsored" id="btn-read-about">
+                                <span>Läs mer om oss</span>
+                                <span>→</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Routes -->
+                    <div class="recent-routes-section">
+                        <h3>Senaste rutter</h3>
+                        <div class="recent-route-item" id="recent-route-stockholm">
+                            <div class="route-item-icon">📍</div>
+                            <div class="route-item-details">
+                                <strong>Stockholm → Strömsholm</strong>
+                                <span>202.4 km • 2h 45m</span>
+                            </div>
+                            <div class="route-item-arrow">→</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Tab: Route & Navigation -->
-                <div class="tab-panel active" id="tab-route">
+                <div class="tab-panel" id="tab-route">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Planera rutt</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
                     <div class="card card-input">
                         <h3>Planera säker rutt</h3>
                         
@@ -97,19 +130,6 @@
                         <button id="btn-find-route" class="btn btn-primary">
                             <span>Beräkna Hästrutt</span>
                         </button>
-                    </div>
-
-                    <!-- Om oss Banner -->
-                    <div class="card sponsored-card">
-                        <div class="sponsored-badge" style="background-color: var(--primary-color);">Om oss</div>
-                        <div class="sponsored-content">
-                            <h4>Vårt mål med EquiNav</h4>
-                            <p>Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
-                            <button class="btn-sponsored" id="btn-read-about">
-                                <span>Läs mer om oss</span>
-                                <span>→</span>
-                            </button>
-                        </div>
                     </div>
 
                     <!-- Route Results -->
@@ -179,6 +199,11 @@
 
                 <!-- Tab: Weight & License Calculator -->
                 <div class="tab-panel" id="tab-calculator">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Viktkalkyl</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
                     <div class="card">
                         <h3>Regnummerkoll & Viktkalkyl</h3>
                         <p class="section-intro">Kontrollera snabbt om din dragbil och släpkombination är laglig och matchar ditt körkort.</p>
@@ -334,6 +359,11 @@
 
                 <!-- Tab: Hazards/Reports -->
                 <div class="tab-panel" id="tab-hazards">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Väghinder</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
                     <div class="card">
                         <h3>Hinderrapportering</h3>
                         <p class="section-intro">Här kan du se och lägga till varningar om väghinder som påverkar hästtransporter.</p>
@@ -379,6 +409,11 @@
 
                 <!-- Tab: Emergency SOS -->
                 <div class="tab-panel" id="tab-emergency">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Akut SOS</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
                     <div class="card sos-card">
                         <div class="sos-icon-container">
                             <span class="sos-pulse"></span>
@@ -403,7 +438,68 @@
                     </div>
                 </div>
 
+                <!-- Tab: Saved Routes -->
+                <div class="tab-panel" id="tab-saved">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Sparade rutter</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
+                    <div class="card" style="text-align: center; padding: 40px 20px;">
+                        <span style="font-size: 48px;">🔖</span>
+                        <h4 style="margin-top: 15px; font-family: 'Outfit', sans-serif;">Inga sparade rutter än</h4>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 5px;">Rutter du sparar kommer att visas här för snabb åtkomst.</p>
+                    </div>
+                </div>
+
+                <!-- Tab: Profile Settings -->
+                <div class="tab-panel" id="tab-profile">
+                    <div class="panel-header">
+                        <button class="btn-back-to-home">←</button>
+                        <h3>Min Profil</h3>
+                        <div style="width: 24px;"></div>
+                    </div>
+                    <div class="card" style="padding: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background-color: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 24px;">🐴</div>
+                            <div>
+                                <h4 style="margin: 0; font-family: 'Outfit', sans-serif;">Gästinloggning</h4>
+                                <span style="font-size: 12px; color: var(--text-secondary);">Körkortsklass: B / utökat B</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="profile-license-type">Körkortsklass</label>
+                            <select id="profile-license-type" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 14px;">
+                                <option value="B">B-Körkort (Max 3500kg)</option>
+                                <option value="B-extended" selected>Utökat B (B96) (Max 4250kg)</option>
+                                <option value="BE">BE-Körkort (Max 7000kg)</option>
+                            </select>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-secondary); margin-top: 15px; line-height: 1.4;">Profilinställningar lagras lokalt på din enhet för framtida ruttberäkningar och viktkalkyler.</p>
+                    </div>
+                </div>
+
             </div>
+
+            <!-- Bottom Tab Navigation Bar -->
+            <nav class="bottom-nav">
+                <button class="tab-btn active" data-tab="tab-home">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">Hem</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-route">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-label">Rutter</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-saved">
+                    <span class="nav-icon">🔖</span>
+                    <span class="nav-label">Sparat</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Profil</span>
+                </button>
+            </nav>
             
             <!-- Footer -->
             <footer class="sidebar-footer">

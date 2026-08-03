@@ -8,7 +8,7 @@ let routeLine = null;
 let startMarker = null;
 let endMarker = null;
 let selectedCoordinatesForHazard = null;
-let currentActiveTab = "tab-route";
+let currentActiveTab = "tab-home";
 let mapHazardMarkers = [];
 let localHazards = [];
 let trafikverketMarkers = [];
@@ -34,6 +34,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initSOS();
     initMapControls();
     initAboutUsModal();
+    initNavigationTree();
     
 
     
@@ -166,29 +167,11 @@ function setRouteMarker(type, lat, lng) {
 // Handle tab switching
 function initTabs() {
     const tabs = document.querySelectorAll(".tab-btn");
-    const panels = document.querySelectorAll(".tab-panel");
 
     tabs.forEach(tab => {
         tab.addEventListener("click", () => {
             const targetTab = tab.dataset.tab;
-            currentActiveTab = targetTab;
-
-            tabs.forEach(t => t.classList.remove("active"));
-            panels.forEach(p => p.classList.remove("active"));
-
-            tab.classList.add("active");
-            document.getElementById(targetTab).classList.add("active");
-
-            // Expandera bottom sheet så att man ser formulären
-            expandBottomSheet("peek");
-
-            // Rensa tillfällig hindermarkör vid flikbyte
-            if (targetTab !== "tab-hazards") {
-                if (window.tempHazardMarker) {
-                    map.removeLayer(window.tempHazardMarker);
-                    window.tempHazardMarker = null;
-                }
-            }
+            switchTab(targetTab);
         });
     });
 }
@@ -2215,6 +2198,98 @@ function initAboutUsModal() {
             if (e.target === aboutUsModal) {
                 aboutUsModal.classList.add("hidden");
             }
+        });
+    }
+}
+
+function switchTab(tabId) {
+    const tabs = document.querySelectorAll(".tab-btn");
+    const panels = document.querySelectorAll(".tab-panel");
+
+    tabs.forEach(t => t.classList.remove("active"));
+    panels.forEach(p => p.classList.remove("active"));
+
+    // Hitta tab-knappen om den finns (vissa flikar finns inte i bottenmenyn)
+    const activeTabButton = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+    if (activeTabButton) {
+        activeTabButton.classList.add("active");
+    }
+
+    const panel = document.getElementById(tabId);
+    if (panel) {
+        panel.classList.add("active");
+    }
+    
+    currentActiveTab = tabId;
+
+    // Expandera bottom sheet så att man ser formulären
+    expandBottomSheet("peek");
+
+    // Rensa tillfällig hindermarkör vid flikbyte
+    if (tabId !== "tab-hazards") {
+        if (window.tempHazardMarker) {
+            map.removeLayer(window.tempHazardMarker);
+            window.tempHazardMarker = null;
+        }
+    }
+}
+
+function initNavigationTree() {
+    // Koppla klick på hemskärmens brickor/knappar
+    const tileRoute = document.getElementById("tile-route");
+    const tileCalculator = document.getElementById("tile-calculator");
+    const tileHazards = document.getElementById("tile-hazards");
+    const tileEmergency = document.getElementById("tile-emergency");
+
+    if (tileRoute) {
+        tileRoute.addEventListener("click", () => {
+            // Avmarkera alla service tiles och markera denna som aktiv
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            tileRoute.classList.add("active");
+            switchTab("tab-route");
+        });
+    }
+    if (tileCalculator) {
+        tileCalculator.addEventListener("click", () => {
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            tileCalculator.classList.add("active");
+            switchTab("tab-calculator");
+        });
+    }
+    if (tileHazards) {
+        tileHazards.addEventListener("click", () => {
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            tileHazards.classList.add("active");
+            switchTab("tab-hazards");
+        });
+    }
+    if (tileEmergency) {
+        tileEmergency.addEventListener("click", () => {
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            tileEmergency.classList.add("active");
+            switchTab("tab-emergency");
+        });
+    }
+
+    // Koppla klick på alla tillbaka-knappar
+    document.querySelectorAll(".btn-back-to-home").forEach(btn => {
+        btn.addEventListener("click", () => {
+            // Återställ rutt-knappen som aktiv på hemskärmen till nästa gång
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            const tileRoute = document.getElementById("tile-route");
+            if (tileRoute) tileRoute.classList.add("active");
+            switchTab("tab-home");
+        });
+    });
+    
+    // Koppla klick på senaste rutter
+    const recentRoute = document.getElementById("recent-route-stockholm");
+    if (recentRoute) {
+        recentRoute.addEventListener("click", () => {
+            document.getElementById("input-start").value = "Stockholm";
+            document.getElementById("input-end").value = "Strömsholm";
+            switchTab("tab-route");
+            document.getElementById("btn-find-route").click();
         });
     }
 }
