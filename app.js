@@ -905,12 +905,30 @@ function calculateHorseDurationForStep(step, route) {
     
     if (stepDuration <= 0) return 0;
     
-    const carSpeed = distanceMeters / stepDuration; // m/s
-    const maxTowingSpeedMs = 80 / 3.6; // 80 km/h in m/s
+    const streetName = (step.name || "").trim();
+    // Identifiera motorvägar/huvudvägar i Sverige (t.ex. E18, E4, Riksväg 50)
+    const isHighway = /^[E]\s*\d+/i.test(streetName) || /^Riksväg/i.test(streetName) || /motorväg/i.test(streetName);
+    
+    let carSpeed = distanceMeters / stepDuration;
+    
+    // Om det är en motorväg/Europaväg, se till att bilens hastighet är realistisk (t.ex. 105 km/h)
+    if (isHighway) {
+        const minHighwaySpeedMs = 105 / 3.6; // 105 km/h
+        if (carSpeed < minHighwaySpeedMs) {
+            carSpeed = minHighwaySpeedMs;
+            stepDuration = distanceMeters / carSpeed;
+        }
+    }
+    
+    const maxTowingSpeedMs = 80 / 3.6; // 80 km/h
     
     let horseDuration = stepDuration;
     if (carSpeed > maxTowingSpeedMs) {
+        // Begränsa hästsläp till 80 km/h på snabba vägar
         horseDuration = distanceMeters / maxTowingSpeedMs;
+    } else {
+        // I stan och på kurviga småvägar kör man 10% långsammare med släp
+        horseDuration = stepDuration * 1.1;
     }
     
     // Lägg till 5 sekunder turn penalty om step är en sväng eller rondell
@@ -921,6 +939,35 @@ function calculateHorseDurationForStep(step, route) {
     }
     
     return horseDuration;
+}
+
+function calculateCarDurationForStep(step, route) {
+    const distanceMeters = step.distance || 0;
+    let stepDuration = step.duration;
+    if (stepDuration === undefined || stepDuration === null || stepDuration <= 0) {
+        const totalDistance = route.distance || 1;
+        const totalDuration = route.duration || 0;
+        stepDuration = (distanceMeters / totalDistance) * totalDuration;
+    }
+    
+    if (stepDuration <= 0) return 0;
+    
+    const streetName = (step.name || "").trim();
+    // Identifiera motorvägar/huvudvägar i Sverige (t.ex. E18, E4, Riksväg 50)
+    const isHighway = /^[E]\s*\d+/i.test(streetName) || /^Riksväg/i.test(streetName) || /motorväg/i.test(streetName);
+    
+    let carSpeed = distanceMeters / stepDuration;
+    
+    // Om det är en motorväg/Europaväg, se till att bilens hastighet är realistisk (t.ex. 105 km/h)
+    if (isHighway) {
+        const minHighwaySpeedMs = 105 / 3.6; // 105 km/h
+        if (carSpeed < minHighwaySpeedMs) {
+            carSpeed = minHighwaySpeedMs;
+            stepDuration = distanceMeters / carSpeed;
+        }
+    }
+    
+    return stepDuration;
 }
 
 async function displayRouteResults(startName, endName, route) {
@@ -980,27 +1027,27 @@ async function displayRouteResults(startName, endName, route) {
 
     document.getElementById("stat-turns").innerText = `${turnCount} st`;
 
-    const carDuration = route.duration;
-    const carHrs = Math.floor(carDuration / 3600);
-    const carMins = Math.floor((carDuration % 3600) / 60);
-    document.getElementById("stat-car-eta").innerText = `${carHrs > 0 ? carHrs + 'h ' : ''}${carMins}m`;
-
+    let totalCarSeconds = 0;
     let totalTowingSeconds = 0;
     if (route.legs && route.legs[0] && route.legs[0].steps) {
         route.legs[0].steps.forEach(step => {
+            step.carDuration = calculateCarDurationForStep(step, route);
             step.horseDuration = calculateHorseDurationForStep(step, route);
+            totalCarSeconds += step.carDuration;
             totalTowingSeconds += step.horseDuration;
         });
     } else {
         // Fallback om steg saknas
-        const carAverageSpeed = carDuration > 0 ? (distanceKm / (carDuration / 3600)) : 50;
-        const speedRatio = Math.min(1.0, carAverageSpeed / 110);
-        const towingSpeed = Math.min(80, 80 * speedRatio);
-        const baseTowingHours = distanceKm / towingSpeed;
-        const turnPenaltySeconds = turnCount * 5;
-        totalTowingSeconds = (baseTowingHours * 3600) + turnPenaltySeconds;
+        const carAverageSpeed = (distanceKm > 100) ? 105 : 70; // Realistisk snitthastighet i km/h
+        const towingSpeed = Math.min(80, carAverageSpeed * 0.8);
+        totalCarSeconds = (distanceKm / carAverageSpeed) * 3600;
+        totalTowingSeconds = (distanceKm / towingSpeed) * 3600 + (turnCount * 5);
     }
     
+    const carHrs = Math.floor(totalCarSeconds / 3600);
+    const carMins = Math.floor((totalCarSeconds % 3600) / 60);
+    document.getElementById("stat-car-eta").innerText = `${carHrs > 0 ? carHrs + 'h ' : ''}${carMins}m`;
+
     const horseHrs = Math.floor(totalTowingSeconds / 3600);
     const horseMins = Math.floor((totalTowingSeconds % 3600) / 60);
     document.getElementById("stat-horse-eta").innerText = `${horseHrs > 0 ? horseHrs + 'h ' : ''}${horseMins}m`;
