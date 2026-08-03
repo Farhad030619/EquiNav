@@ -21,8 +21,8 @@
         
         <!-- App Sidebar / Bottom Sheet -->
         <aside class="sidebar state-peek" id="app-sidebar">
-            <!-- Drag handle (hidden in mobile-first layout) -->
-            <div class="bottom-sheet-handle" id="bottom-sheet-drag" style="display: none !important;"></div>
+            <!-- Drag handle -->
+            <div class="bottom-sheet-handle" id="bottom-sheet-drag"></div>
 
             <!-- Tab Contents -->
             <div class="sidebar-content">
@@ -99,6 +99,13 @@
                         <button class="btn-back-to-home">←</button>
                         <h3>Planera rutt</h3>
                         <div style="width: 24px;"></div>
+                    </div>
+                    
+                    <!-- Loading Overlay inside panel -->
+                    <div id="route-loading-overlay" class="route-loading-overlay hidden">
+                        <div class="spinner-glow"></div>
+                        <h4 id="loading-text">Beräknar säkraste rutt...</h4>
+                        <p class="loading-sub">Analyserar vägkurvatur och Trafikverkets data.</p>
                     </div>
                     <div class="card card-input">
                         <h3>Planera säker rutt</h3>
@@ -179,10 +186,7 @@
                             </div>
                             <div style="display: flex; gap: 10px; margin-top: 15px;">
                                 <button id="btn-start-navigation" class="btn btn-success" style="flex: 1; background-color: #1b5e20; border-color: #1b5e20; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: 600; color: white;">
-                                    <span>📡</span> Live GPS
-                                </button>
-                                <button id="btn-simulate-navigation" class="btn btn-secondary" style="flex: 1; background-color: #5a665f; border-color: #5a665f; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; font-weight: 600; color: white;">
-                                    <span>🎮</span> Simulera
+                                    <span>📡</span> Starta GPS-Navigering
                                 </button>
                             </div>
                         </div>

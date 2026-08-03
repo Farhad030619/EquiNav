@@ -283,7 +283,7 @@ function initBottomSheet() {
 
             let targetTranslateY = startTranslateY + deltaY;
             const sidebarHeight = sidebar.offsetHeight;
-            const maxTranslate = sidebarHeight - 140;
+            const maxTranslate = sidebarHeight - 60;
 
             // Apply rubber banding beyond limits
             if (targetTranslateY < 0) {
@@ -308,8 +308,8 @@ function initBottomSheet() {
             const sidebarHeight = sidebar.offsetHeight;
             const deltaY = e.changedTouches[0].clientY - touchStartY;
 
-            const peekTranslate = sidebarHeight * 0.45;
-            const collapsedTranslate = sidebarHeight - 140;
+            const peekTranslate = sidebarHeight - 200;
+            const collapsedTranslate = sidebarHeight - 60;
 
             const snapPoints = {
                 "expanded": 0,
@@ -737,36 +737,71 @@ function initRoutePlanner() {
         calcRouteBtn.setAttribute("disabled", "true");
         calcRouteBtn.innerText = "Söker säker rutt...";
 
+        // Visa loading-overlay
+        const loadingOverlay = document.getElementById("route-loading-overlay");
+        const loadingTextEl = document.getElementById("loading-text");
+        let textInterval = null;
+        
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove("hidden");
+            
+            // Loopa igenom stimulerande laddningstexter
+            const loadingTexts = [
+                "Beräknar säkraste rutt...",
+                "Analyserar vägkurvatur...",
+                "Söker efter lutning & backar...",
+                "Hämtar data från Trafikverket...",
+                "Optimerar hastighet för släp..."
+            ];
+            let textIdx = 0;
+            textInterval = setInterval(() => {
+                if (loadingTextEl) {
+                    textIdx = (textIdx + 1) % loadingTexts.length;
+                    loadingTextEl.innerText = loadingTexts[textIdx];
+                }
+            }, 400);
+        }
+
         resolveCoordinates(startVal, (startCoord) => {
-            if (!startCoord) {
-                alert(`Kunde inte hitta startplats: "${startVal}"`);
+            const cleanupLoader = () => {
+                if (textInterval) clearInterval(textInterval);
+                if (loadingOverlay) loadingOverlay.classList.add("hidden");
                 calcRouteBtn.removeAttribute("disabled");
                 calcRouteBtn.innerText = "Beräkna Hästrutt";
+            };
+
+            if (!startCoord) {
+                alert(`Kunde inte hitta startplats: "${startVal}"`);
+                cleanupLoader();
                 return;
             }
 
             resolveCoordinates(endVal, (endCoord) => {
                 if (!endCoord) {
                     alert(`Kunde inte hitta slutdestination: "${endVal}"`);
-                    calcRouteBtn.removeAttribute("disabled");
-                    calcRouteBtn.innerText = "Beräkna Hästrutt";
+                    cleanupLoader();
                     return;
                 }
 
                 setRouteMarker("start", startCoord[0], startCoord[1]);
                 setRouteMarker("end", endCoord[0], endCoord[1]);
 
+                const startTime = Date.now();
+
                 fetchOSRMRoute(startCoord, endCoord, (routeData) => {
-                    calcRouteBtn.removeAttribute("disabled");
-                    calcRouteBtn.innerText = "Beräkna Hästrutt";
-                    
-                    if (routeData) {
-                        displayRouteResults(startVal, endVal, routeData);
-                    } else {
-                        alert("Kunde inte hämta ruttdetaljer. Genererar en demonstrationsrutt istället.");
-                        const fallbackData = generateFallbackRoute(startCoord, endCoord);
-                        displayRouteResults(startVal, endVal, fallbackData);
-                    }
+                    const elapsed = Date.now() - startTime;
+                    const delay = Math.max(0, 2200 - elapsed); // Stanna i minst 2.2 sekunder för att simulera beräkning
+
+                    setTimeout(() => {
+                        cleanupLoader();
+                        if (routeData) {
+                            displayRouteResults(startVal, endVal, routeData);
+                        } else {
+                            alert("Kunde inte hämta ruttdetaljer. Genererar en demonstrationsrutt istället.");
+                            const fallbackData = generateFallbackRoute(startCoord, endCoord);
+                            displayRouteResults(startVal, endVal, fallbackData);
+                        }
+                    }, delay);
                 });
             });
         });
