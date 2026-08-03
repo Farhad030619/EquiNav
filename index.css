@@ -2370,4 +2370,63 @@ textarea:focus {
     }
 }
 
+/* Optimization Checkmarks Checklist */
+.optimization-checklist {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.opt-badge {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 6px;
+    gap: 6px;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.opt-badge.active {
+    background-color: #f0fdf4;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.opt-badge .opt-icon {
+    font-size: 20px;
+}
+
+.opt-badge .opt-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.opt-badge.active .opt-label {
+    color: #166534;
+}
+
+.opt-badge .opt-check {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #10b981;
+    color: #ffffff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
 
