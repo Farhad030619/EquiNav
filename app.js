@@ -894,6 +894,32 @@ function generateFallbackRoute(start, end) {
     };
 }
 
+function getSwedishRoadSpeedLimit(streetName, stepDistance, stepDuration) {
+    const name = (streetName || "").trim();
+    let calculatedSpeed = stepDuration > 0 ? (stepDistance / stepDuration) * 3.6 : 50;
+    
+    if (/^[E]\s*\d+/i.test(name) || /motorväg/i.test(name)) {
+        return 110;
+    }
+    if (/^Riksväg/i.test(name) || /^Länsväg/i.test(name) || /^\d{3}$/.test(name)) {
+        return 90;
+    }
+    const roadNumberMatch = name.match(/\b(\d{2,3})\b/);
+    if (roadNumberMatch) {
+        const roadNum = parseInt(roadNumberMatch[1], 10);
+        if (roadNum >= 100 && roadNum <= 400) {
+            return 80;
+        }
+    }
+    if (calculatedSpeed > 80) {
+        return Math.min(120, Math.round(calculatedSpeed / 10) * 10);
+    }
+    if (name === "huvudväg" || name === "" || calculatedSpeed > 50) {
+        return 70;
+    }
+    return 50;
+}
+
 function calculateHorseDurationForStep(step, route) {
     const distanceMeters = step.distance || 0;
     let stepDuration = step.duration;
@@ -903,33 +929,16 @@ function calculateHorseDurationForStep(step, route) {
         stepDuration = (distanceMeters / totalDistance) * totalDuration;
     }
     
-    if (stepDuration <= 0) return 0;
+    if (distanceMeters <= 0) return 0;
     
     const streetName = (step.name || "").trim();
-    // Identifiera motorvägar/huvudvägar i Sverige (t.ex. E18, E4, Riksväg 50)
-    const isHighway = /^[E]\s*\d+/i.test(streetName) || /^Riksväg/i.test(streetName) || /motorväg/i.test(streetName);
+    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
     
-    let carSpeed = distanceMeters / stepDuration;
+    // Hästsläp är begränsat till 80 km/h, men kör 10% långsammare i lägre hastigheter pga försiktighet
+    const towingSpeedLimit = Math.min(80, speedLimit);
+    const towingSpeedMs = (towingSpeedLimit < 80) ? (towingSpeedLimit * 0.9) / 3.6 : towingSpeedLimit / 3.6;
     
-    // Om det är en motorväg/Europaväg, se till att bilens hastighet är realistisk (t.ex. 105 km/h)
-    if (isHighway) {
-        const minHighwaySpeedMs = 105 / 3.6; // 105 km/h
-        if (carSpeed < minHighwaySpeedMs) {
-            carSpeed = minHighwaySpeedMs;
-            stepDuration = distanceMeters / carSpeed;
-        }
-    }
-    
-    const maxTowingSpeedMs = 80 / 3.6; // 80 km/h
-    
-    let horseDuration = stepDuration;
-    if (carSpeed > maxTowingSpeedMs) {
-        // Begränsa hästsläp till 80 km/h på snabba vägar
-        horseDuration = distanceMeters / maxTowingSpeedMs;
-    } else {
-        // I stan och på kurviga småvägar kör man 10% långsammare med släp
-        horseDuration = stepDuration * 1.1;
-    }
+    let horseDuration = distanceMeters / towingSpeedMs;
     
     // Lägg till 5 sekunder turn penalty om step är en sväng eller rondell
     const type = (step.maneuver && step.maneuver.type) || "";
@@ -950,24 +959,13 @@ function calculateCarDurationForStep(step, route) {
         stepDuration = (distanceMeters / totalDistance) * totalDuration;
     }
     
-    if (stepDuration <= 0) return 0;
+    if (distanceMeters <= 0) return 0;
     
     const streetName = (step.name || "").trim();
-    // Identifiera motorvägar/huvudvägar i Sverige (t.ex. E18, E4, Riksväg 50)
-    const isHighway = /^[E]\s*\d+/i.test(streetName) || /^Riksväg/i.test(streetName) || /motorväg/i.test(streetName);
+    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
+    const carSpeedMs = speedLimit / 3.6;
     
-    let carSpeed = distanceMeters / stepDuration;
-    
-    // Om det är en motorväg/Europaväg, se till att bilens hastighet är realistisk (t.ex. 105 km/h)
-    if (isHighway) {
-        const minHighwaySpeedMs = 105 / 3.6; // 105 km/h
-        if (carSpeed < minHighwaySpeedMs) {
-            carSpeed = minHighwaySpeedMs;
-            stepDuration = distanceMeters / carSpeed;
-        }
-    }
-    
-    return stepDuration;
+    return distanceMeters / carSpeedMs;
 }
 
 async function displayRouteResults(startName, endName, route) {
