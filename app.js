@@ -981,7 +981,7 @@ async function displayRouteResults(startName, endName, route) {
     }
 
     routeLine = L.polyline(swappedCoordinates, {
-        color: "#284c36",
+        color: "#3b82f6",
         weight: 6,
         opacity: 0.85
     }).addTo(map);
@@ -2070,7 +2070,7 @@ function recalculateRouteFromCurrentPosition(currentPt) {
             map.removeLayer(routeLine);
         }
         routeLine = L.polyline(newSwappedCoords, {
-            color: "#284c36",
+            color: "#3b82f6",
             weight: 6,
             opacity: 0.85
         }).addTo(map);

@@ -1447,7 +1447,7 @@ textarea:focus {
     transform: translate(-50%, -50%);
     width: 40px;
     height: 40px;
-    background: rgba(30, 142, 62, 0.4);
+    background: rgba(59, 130, 246, 0.4);
     border-radius: 50%;
     animation: navPulse 1.8s infinite ease-in-out;
     pointer-events: none;
@@ -1460,7 +1460,7 @@ textarea:focus {
     transform: translate(-50%, -50%);
     width: 28px;
     height: 28px;
-    background: #1b5e20;
+    background: #3b82f6;
     border: 3px solid #ffffff;
     border-radius: 50%;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
@@ -2290,28 +2290,28 @@ textarea:focus {
 
 /* Premium Button & Color Adjustments (Modern & Simple but Stimulating) */
 .btn-primary {
-    background: linear-gradient(135deg, #1b4d3e, #113329) !important;
+    background: linear-gradient(135deg, #0c2340, #061120) !important;
     border: none !important;
-    box-shadow: 0 4px 12px rgba(27, 77, 62, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(12, 35, 64, 0.15) !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #286e58, #17483a) !important;
-    box-shadow: 0 6px 16px rgba(27, 77, 62, 0.25) !important;
+    background: linear-gradient(135deg, #16365c, #0c2340) !important;
+    box-shadow: 0 6px 16px rgba(12, 35, 64, 0.25) !important;
     transform: translateY(-1px);
 }
 
 .btn-success {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
     border: none !important;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2) !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .btn-success:hover {
-    background: linear-gradient(135deg, #34d399, #059669) !important;
-    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3) !important;
+    background: linear-gradient(135deg, #60a5fa, #1d4ed8) !important;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3) !important;
     transform: translateY(-1px);
 }
 
