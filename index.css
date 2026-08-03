@@ -4,16 +4,15 @@
  */
 
 :root {
-    /* Color Palette */
-    --primary-color: #1b4d3e;
-    --primary-light: #f0fdf4;
-    --primary-dark: #0f2e24;
-    --accent-color: #10b981;
-    --accent-hover: #059669;
-    --bg-color: #f8fafc;
+    --primary-color: #0c2340;
+    --primary-light: #f0f4f8;
+    --primary-dark: #05101f;
+    --accent-color: #3b82f6;
+    --accent-hover: #1d4ed8;
+    --bg-color: #f4f6fa;
     --card-bg: #ffffff;
-    --text-color: #0f172a;
-    --text-secondary: #475569;
+    --text-color: #1e293b;
+    --text-secondary: #64748b;
     --border-color: #e2e8f0;
     --error-color: #ef4444;
     --success-color: #10b981;
