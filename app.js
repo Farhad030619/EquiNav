@@ -894,6 +894,37 @@ function generateFallbackRoute(start, end) {
     };
 }
 
+function getSwedishRoadSpeedLimit(streetName, stepDistance, stepDuration) {
+    const name = (streetName || "").trim();
+    let calculatedSpeed = stepDuration > 0 ? (stepDistance / stepDuration) * 3.6 : 50;
+    
+    // 1. Motorväg / Europaväg (t.ex. E18, E4, E20, E6) -> 110 km/h
+    if (/^[E]\s*\d+/i.test(name) || /motorväg/i.test(name)) {
+        return 110;
+    }
+    // 2. Riksväg / Länsväg (t.ex. Riksväg 50, Länsväg 252) -> 90 km/h
+    if (/^Riksväg/i.test(name) || /^Länsväg/i.test(name) || /^\d{3}$/.test(name)) {
+        return 90;
+    }
+    // 3. Primära länsvägar (t.ex. väg 100-400 i Sverige) -> 80 km/h
+    const roadNumberMatch = name.match(/\b(\d{2,3})\b/);
+    if (roadNumberMatch) {
+        const roadNum = parseInt(roadNumberMatch[1], 10);
+        if (roadNum >= 100 && roadNum <= 400) {
+            return 80;
+        }
+    }
+    // 4. Om OSRM:s beräknade hastighet är hög, använd den avrundad till närmsta 10
+    if (calculatedSpeed > 80) {
+        return Math.min(120, Math.round(calculatedSpeed / 10) * 10);
+    }
+    // 5. Landsväg standard
+    if (name === "huvudväg" || name === "" || calculatedSpeed > 50) {
+        return 70;
+    }
+    return 50;
+}
+
 function calculateHorseDurationForStep(step, route) {
     const distanceMeters = step.distance || 0;
     let stepDuration = step.duration;
@@ -905,20 +936,31 @@ function calculateHorseDurationForStep(step, route) {
     
     if (distanceMeters <= 0 || stepDuration <= 0) return 0;
     
-    // Beräkna bilens hastighet på detta vägsegment i m/s utifrån OSRM:s faktiska data
-    const carSpeedMs = distanceMeters / stepDuration;
-    const maxTowingSpeedMs = 80 / 3.6; // 80 km/h i m/s
+    const streetName = (step.name || "").trim();
+    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
     
-    let horseDuration = stepDuration;
-    if (carSpeedMs > maxTowingSpeedMs) {
-        // Om bilhastigheten (hastighetsgränsen) är högre än 80 km/h,
-        // begränsar vi släpet till exakt 80 km/h för detta segment.
-        horseDuration = distanceMeters / maxTowingSpeedMs;
+    // Beräkna bilens teoretiska tid (utan hinder) på denna sträcka
+    const carSpeedMs = speedLimit / 3.6;
+    const baseCarDuration = distanceMeters / carSpeedMs;
+    
+    // Beräkna hinder/fördröjnings-straffet som OSRM lagt på (korsningar, trafikljus etc)
+    const penalty = Math.max(0, stepDuration - baseCarDuration);
+    
+    // Hästsläp är begränsat till 80 km/h på snabba vägar
+    const towingSpeedLimit = Math.min(80, speedLimit);
+    
+    let baseTrailerDuration = 0;
+    if (towingSpeedLimit < 80) {
+        // Kör 10% långsammare i lägre hastigheter pga ökad försiktighet
+        const towingSpeedMs = (towingSpeedLimit * 0.9) / 3.6;
+        baseTrailerDuration = distanceMeters / towingSpeedMs;
     } else {
-        // Om hastigheten är under eller lika med 80 km/h (t.ex. 30, 40, 50, 70),
-        // kör släpet i bilens hastighet + 10% extra tid pga extra försiktighet med släp.
-        horseDuration = stepDuration * 1.1;
+        const towingSpeedMs = towingSpeedLimit / 3.6;
+        baseTrailerDuration = distanceMeters / towingSpeedMs;
     }
+    
+    // Trailer-tiden är trailer-bas-tid plus OSRM:s väghinder-penalty
+    let horseDuration = baseTrailerDuration + penalty;
     
     // Lägg till 5 sekunder turn penalty om step är en sväng eller rondell
     const type = (step.maneuver && step.maneuver.type) || "";
@@ -941,7 +983,6 @@ function calculateCarDurationForStep(step, route) {
     
     if (distanceMeters <= 0 || stepDuration <= 0) return 0;
     
-    // Lita helt och hållet på OSRM:s dynamiska bilprofil
     return stepDuration;
 }
 
