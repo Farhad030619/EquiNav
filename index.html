@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260803_2128">
+    <link rel="stylesheet" href="index.css?v=20260808_1623">
 </head>
 <body>
     <div class="app-container">
@@ -31,7 +31,7 @@
                 <div class="tab-panel active" id="tab-home">
                     <div class="home-header">
                         <div class="logo">
-                            <img src="logo.png?v=20260803_2128" alt="EquiNav Logo" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 4px; box-shadow: 0 2px 8px rgba(12, 35, 64, 0.08);">
+                            <img src="logo.png?v=20260808_1623" alt="EquiNav Logo" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 4px; box-shadow: 0 2px 8px rgba(12, 35, 64, 0.08);">
                             <h1 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-color); margin: 0; letter-spacing: -0.5px;">EquiNav</h1>
                         </div>
                         <button class="notification-btn" title="Aviseringar">
@@ -44,23 +44,10 @@
                         <p>Säker och optimerad navigation för dig och din häst.</p>
                     </div>
                     
-                    <!-- Service Grid (Row of Buttons) -->
-                    <div class="service-row">
-                        <button class="service-tile active" id="tile-route">
-                            <div class="tile-icon">📍</div>
-                            <div class="tile-label">Rutt & GPS</div>
-                        </button>
-                        <button class="service-tile" id="tile-calculator">
-                            <div class="tile-icon">⚖️</div>
-                            <div class="tile-label">Viktkalkyl</div>
-                        </button>
-                        <button class="service-tile" id="tile-hazards">
-                            <div class="tile-icon">⚠️</div>
-                            <div class="tile-label">Hinder</div>
-                        </button>
-                        <button class="service-tile" id="tile-emergency">
-                            <div class="tile-icon">➕</div>
-                            <div class="tile-label">Akut SOS</div>
+                    <!-- Primary Action Button (Räkna ut din rutt) -->
+                    <div class="main-action-container">
+                        <button class="btn btn-primary btn-large btn-main-action" id="btn-home-plan-route" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; font-weight: 700; border-radius: 16px; font-size: 16px; margin: 15px 0;">
+                            <span>🗺️</span> Räkna ut din rutt
                         </button>
                     </div>
                     
@@ -687,9 +674,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- App Database layer -->
-    <script src="db.js?v=20260803_2128"></script>
+    <script src="db.js?v=20260808_1623"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260803_2128"></script>
+    <script src="app.js?v=20260808_1623"></script>
 </body>
 </html>

@@ -2333,7 +2333,15 @@ function switchTab(tabId) {
 }
 
 function initNavigationTree() {
-    // Koppla klick på hemskärmens brickor/knappar
+    // Koppla klick på hemskärmens primära åtgärdsknapp
+    const btnHomePlanRoute = document.getElementById("btn-home-plan-route");
+    if (btnHomePlanRoute) {
+        btnHomePlanRoute.addEventListener("click", () => {
+            switchTab("tab-route");
+        });
+    }
+
+    // Koppla klick på hemskärmens brickor/knappar (om de finns)
     const tileRoute = document.getElementById("tile-route");
     const tileCalculator = document.getElementById("tile-calculator");
     const tileHazards = document.getElementById("tile-hazards");

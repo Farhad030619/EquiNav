@@ -2429,4 +2429,22 @@ textarea:focus {
     box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
 }
 
+/* Premium Main Action Button styling */
+.btn-main-action {
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    background: linear-gradient(135deg, var(--accent-color), #2563eb) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.btn-main-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3) !important;
+}
+
+.btn-main-action:active {
+    transform: translateY(0) scale(0.98) !important;
+}
+
 
