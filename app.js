@@ -939,28 +939,17 @@ function calculateHorseDurationForStep(step, route) {
     const streetName = (step.name || "").trim();
     const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
     
-    // Beräkna bilens teoretiska tid (utan hinder) på denna sträcka
-    const carSpeedMs = speedLimit / 3.6;
-    const baseCarDuration = distanceMeters / carSpeedMs;
-    
-    // Beräkna hinder/fördröjnings-straffet som OSRM lagt på (korsningar, trafikljus etc)
-    const penalty = Math.max(0, stepDuration - baseCarDuration);
-    
-    // Hästsläp är begränsat till 80 km/h på snabba vägar
-    const towingSpeedLimit = Math.min(80, speedLimit);
-    
-    let baseTrailerDuration = 0;
-    if (towingSpeedLimit < 80) {
-        // Kör 10% långsammare i lägre hastigheter pga ökad försiktighet
-        const towingSpeedMs = (towingSpeedLimit * 0.9) / 3.6;
-        baseTrailerDuration = distanceMeters / towingSpeedMs;
+    let horseDuration = 0;
+    if (speedLimit >= 90) {
+        // För motorvägar/riksvägar (90, 100, 110, 120 km/h):
+        // Släpet är begränsat till max 80 km/h. Vi lägger på en liten 5% marginal för trafik.
+        const towingSpeedMs = 80 / 3.6;
+        horseDuration = (distanceMeters / towingSpeedMs) * 1.05;
     } else {
-        const towingSpeedMs = towingSpeedLimit / 3.6;
-        baseTrailerDuration = distanceMeters / towingSpeedMs;
+        // För lokala vägar och stadskörning:
+        // Kör i samma tempo som bilen + 10% säkerhetsmarginal.
+        horseDuration = stepDuration * 1.1;
     }
-    
-    // Trailer-tiden är trailer-bas-tid plus OSRM:s väghinder-penalty
-    let horseDuration = baseTrailerDuration + penalty;
     
     // Lägg till 5 sekunder turn penalty om step är en sväng eller rondell
     const type = (step.maneuver && step.maneuver.type) || "";
@@ -983,7 +972,18 @@ function calculateCarDurationForStep(step, route) {
     
     if (distanceMeters <= 0 || stepDuration <= 0) return 0;
     
-    return stepDuration;
+    const streetName = (step.name || "").trim();
+    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
+    
+    if (speedLimit >= 90) {
+        // För motorvägar/riksvägar: beräkna baserat på verklig hastighetsgräns (110 km/h standard) + 5% trafikmarginal.
+        // Detta korrigerar OSRM:s databas som ofta antar orealistiskt låga hastigheter på svenska Europavägar.
+        const carSpeedMs = speedLimit / 3.6;
+        return (distanceMeters / carSpeedMs) * 1.05;
+    } else {
+        // För lokala vägar: lita på OSRM:s inbyggda korsnings- och trafikdata.
+        return stepDuration;
+    }
 }
 
 async function displayRouteResults(startName, endName, route) {
