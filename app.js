@@ -898,27 +898,41 @@ function getSwedishRoadSpeedLimit(streetName, stepDistance, stepDuration) {
     const name = (streetName || "").trim();
     let calculatedSpeed = stepDuration > 0 ? (stepDistance / stepDuration) * 3.6 : 50;
     
-    // 1. Motorväg / Europaväg (t.ex. E18, E4, E20, E6) -> 110 km/h
-    if (/^[E]\s*\d+/i.test(name) || /motorväg/i.test(name)) {
+    // 1. Motorväg / Europaväg (t.ex. E4, E18, E20, Europaväg 4, Avfart E4) -> 110 km/h
+    if (/\bE\s*\d+\b/i.test(name) || /Europaväg/i.test(name) || /motorväg/i.test(name)) {
         return 110;
     }
-    // 2. Riksväg / Länsväg (t.ex. Riksväg 50, Länsväg 252) -> 90 km/h
-    if (/^Riksväg/i.test(name) || /^Länsväg/i.test(name) || /^\d{3}$/.test(name)) {
+    
+    // 2. Riksväg / Länsväg (t.ex. Riksväg 50, Länsväg 252, Rv 50) -> 90 km/h
+    if (/Riksväg/i.test(name) || /Länsväg/i.test(name) || /\bRv\s*\d+/i.test(name)) {
         return 90;
     }
-    // 3. Primära länsvägar (t.ex. väg 100-400 i Sverige) -> 80 km/h
-    const roadNumberMatch = name.match(/\b(\d{2,3})\b/);
+    
+    // 3. Matcha vägnummer för att identifiera Riksvägar vs Länsvägar
+    const roadNumberMatch = name.match(/\b(\d{1,3})\b/);
     if (roadNumberMatch) {
         const roadNum = parseInt(roadNumberMatch[1], 10);
         if (roadNum >= 100 && roadNum <= 400) {
-            return 80;
+            return 80; // Standard länsväg
+        } else if (roadNum < 100) {
+            return 90; // Standard riksväg (t.ex. väg 50, väg 70)
         }
     }
-    // 4. Om OSRM:s beräknade hastighet är hög, använd den avrundad till närmsta 10
+    
+    // 4. Specialregel för långa odokumenterade motorvägssegment (t.ex. E4/E18 som saknar namn i OSRM-svaret)
+    if (stepDistance > 5000 && calculatedSpeed > 70) {
+        if (calculatedSpeed > 80) {
+            return 110;
+        }
+        return 90;
+    }
+    
+    // 5. Om OSRM:s beräknade hastighet är hög, använd den avrundad till närmsta 10
     if (calculatedSpeed > 80) {
         return Math.min(120, Math.round(calculatedSpeed / 10) * 10);
     }
-    // 5. Landsväg standard
+    
+    // 6. Landsväg standard
     if (name === "huvudväg" || name === "" || calculatedSpeed > 50) {
         return 70;
     }
