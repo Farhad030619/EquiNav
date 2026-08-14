@@ -887,15 +887,13 @@ function fetchRoute(start, end, callback) {
 }
 
 async function fetchOpenRouteServiceRoute(start, end, apiKey) {
-    const url = "https://api.heigit.org/v2/directions/driving-car/geojson";
+    const url = "https://api.heigit.org/openrouteservice/v2/directions/driving-car/geojson";
     
     const body = {
         coordinates: [
             [start[1], start[0]],
             [end[1], end[0]]
-        ],
-        extra_info: ["maxspeed"],
-        language: "sv"
+        ]
     };
 
     const response = await fetch(url, {
