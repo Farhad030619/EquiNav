@@ -1002,6 +1002,68 @@ textarea:focus {
 }
 
 /* ----------------------------------------------------
+ * FLOATING GOOGLE MAPS-LIKE SEARCH BAR
+ * ---------------------------------------------------- */
+.floating-search-bar {
+    position: absolute;
+    bottom: 40px;
+    left: calc(50% + 220px); /* Center in the map area on desktop */
+    transform: translateX(-50%);
+    width: 420px;
+    max-width: 90%;
+    height: 52px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 26px;
+    box-shadow: 0 4px 20px rgba(12, 35, 64, 0.15);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 1000;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.floating-search-bar:hover {
+    transform: translateX(-50%) scale(1.02);
+    box-shadow: 0 6px 24px rgba(12, 35, 64, 0.22);
+    border-color: var(--accent-color);
+}
+
+.floating-search-icon {
+    font-size: 18px;
+    margin-right: 12px;
+    color: var(--text-secondary);
+}
+
+#floating-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+#floating-search-input::placeholder {
+    color: #94a3b8;
+}
+
+.floating-search-arrow {
+    font-size: 16px;
+    color: var(--accent-color);
+    font-weight: bold;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+}
+
+.floating-search-bar:hover .floating-search-arrow {
+    transform: translateX(3px);
+}
+
+/* ----------------------------------------------------
  * FLOATING MAP CONTROLS OVERLAY
  * ---------------------------------------------------- */
 .map-controls {
@@ -1212,6 +1274,15 @@ textarea:focus {
         transition: var(--transition-smooth);
     }
 
+    .floating-search-bar {
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 32px);
+        max-width: 420px;
+        bottom: calc(45dvh + 16px);
+        transition: var(--transition-smooth);
+    }
+
     /* Bottom Sheet State Positions */
     
     /* COLLAPSED STATE: Only header handle + tabs */
@@ -1229,12 +1300,20 @@ textarea:focus {
         bottom: 156px;
     }
 
+    .sidebar.state-collapsed ~ .floating-search-bar {
+        bottom: 156px;
+    }
+
     /* PEEK STATE (DEFAULT) */
     .sidebar.state-peek {
         transform: translateY(40dvh); /* Shows 45dvh from bottom */
     }
     
     .sidebar.state-peek ~ .map-controls {
+        bottom: calc(45dvh + 16px);
+    }
+
+    .sidebar.state-peek ~ .floating-search-bar {
         bottom: calc(45dvh + 16px);
     }
 
@@ -1245,6 +1324,11 @@ textarea:focus {
 
     .sidebar.state-expanded ~ .map-controls {
         bottom: calc(85dvh + 16px);
+    }
+
+    .sidebar.state-expanded ~ .floating-search-bar {
+        bottom: calc(85dvh + 16px);
+        display: none !important;
     }
 }
 

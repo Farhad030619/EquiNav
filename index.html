@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260814_1808">
+    <link rel="stylesheet" href="index.css?v=20260814_1827">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -52,12 +52,7 @@
                         <p>Säker och optimerad navigation för dig och din häst.</p>
                     </div>
                     
-                    <!-- Primary Action Button (Räkna ut din rutt) -->
-                    <div class="main-action-container">
-                        <button class="btn btn-primary btn-large btn-main-action" id="btn-home-plan-route" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; font-weight: 700; border-radius: 16px; font-size: 16px; margin: 15px 0;">
-                            <span>🗺️</span> Räkna ut din rutt
-                        </button>
-                    </div>
+                    <!-- Primary Action Button (Räkna ut din rutt) - Hissad till flytande sökruta på kartan -->
                     
                     <!-- Om oss Banner -->
                     <div class="card sponsored-card">
@@ -579,6 +574,13 @@
         <main class="map-container-wrapper">
             <div id="map"></div>
             
+            <!-- Floating Google Maps-like Search Bar (Home page only) -->
+            <div id="floating-search-bar" class="floating-search-bar">
+                <span class="floating-search-icon">🔍</span>
+                <input type="text" id="floating-search-input" placeholder="Vart vill du resa med hästen?" readonly>
+                <span class="floating-search-arrow">➔</span>
+            </div>
+            
             <!-- Map Toast Warning -->
             <div id="map-toast" class="map-toast hidden">
                 <span class="toast-icon">📍</span>
@@ -716,9 +718,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- App Database layer -->
-    <script src="db.js?v=20260814_1808"></script>
+    <script src="db.js?v=20260814_1827"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260814_1808"></script>
+    <script src="app.js?v=20260814_1827"></script>
 </body>
 </html>

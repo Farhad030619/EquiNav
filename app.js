@@ -2518,6 +2518,16 @@ function switchTab(tabId) {
     
     currentActiveTab = tabId;
 
+    // Visa/Dölj flytande sökruta
+    const floatingSearchBar = document.getElementById("floating-search-bar");
+    if (floatingSearchBar) {
+        if (tabId === "tab-home") {
+            floatingSearchBar.classList.remove("hidden");
+        } else {
+            floatingSearchBar.classList.add("hidden");
+        }
+    }
+
     // Expandera bottom sheet så att man ser formulären
     expandBottomSheet("peek");
 
@@ -2536,6 +2546,27 @@ function initNavigationTree() {
     if (btnHomePlanRoute) {
         btnHomePlanRoute.addEventListener("click", () => {
             switchTab("tab-route");
+        });
+    }
+
+    // Koppla klick på hemskärmens flytande sökruta
+    const floatingSearchBar = document.getElementById("floating-search-bar");
+    if (floatingSearchBar) {
+        floatingSearchBar.addEventListener("click", () => {
+            switchTab("tab-route");
+            // Markera "Rutter" som aktiv i hemskärmens brickor om de finns
+            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
+            const tileRoute = document.getElementById("tile-route");
+            if (tileRoute) tileRoute.classList.add("active");
+            
+            // Fokusera på destinationen
+            const endInput = document.getElementById("input-end");
+            if (endInput) {
+                setTimeout(() => {
+                    endInput.focus();
+                    endInput.select();
+                }, 150);
+            }
         });
     }
 
