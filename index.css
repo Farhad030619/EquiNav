@@ -1169,16 +1169,25 @@ textarea:focus {
 }
 
 .service-tile.active {
-    background-color: #0b3c22; /* Dark forest green */
-    border-color: #0b3c22;
+    background-color: #345735; /* #345735 green */
+    border-color: #345735;
     color: #ffffff;
-    box-shadow: 0 4px 12px rgba(11, 60, 34, 0.2);
+    box-shadow: 0 4px 12px rgba(52, 87, 53, 0.2);
 }
 
 .service-tile .tile-icon {
     font-size: 20px;
     margin-bottom: 4px;
     transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-tile .tile-icon svg {
+    display: block;
+    width: 22px;
+    height: 22px;
 }
 
 .service-tile:hover .tile-icon {
@@ -2351,14 +2360,19 @@ textarea:focus {
 }
 
 .service-tile.active {
-    background-color: #284c36;
-    border-color: #284c36;
+    background-color: #345735;
+    border-color: #345735;
     color: #ffffff;
-    box-shadow: 0 4px 15px rgba(40, 76, 54, 0.25);
+    box-shadow: 0 4px 15px rgba(52, 87, 53, 0.25);
 }
 
 .service-tile .tile-icon {
     font-size: 24px;
+}
+
+.service-tile .tile-icon svg {
+    width: 24px;
+    height: 24px;
 }
 
 .service-tile .tile-label {

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'equinav-cache-v13';
+const CACHE_NAME = 'equinav-cache-v14';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './index.css?v=20260814_1858',
-  './app.js?v=20260814_1858',
-  './db.js?v=20260814_1858',
-  './logo.png?v=20260814_1858',
+  './index.css?v=20260814_1900',
+  './app.js?v=20260814_1900',
+  './db.js?v=20260814_1900',
+  './logo.png?v=20260814_1900',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
