@@ -37,6 +37,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initGpsErrorModal();
     initProfileSettings();
     initNavigationTree();
+    initHomeRoutePlanner();
     
     // Register Service Worker for PWA (offline support)
     if ('serviceWorker' in navigator) {
@@ -2504,16 +2505,6 @@ function switchTab(tabId) {
     
     currentActiveTab = tabId;
 
-    // Visa/Dölj flytande sökruta
-    const floatingSearchBar = document.getElementById("floating-search-bar");
-    if (floatingSearchBar) {
-        if (tabId === "tab-home") {
-            floatingSearchBar.classList.remove("hidden");
-        } else {
-            floatingSearchBar.classList.add("hidden");
-        }
-    }
-
     // Expandera bottom sheet så att man ser formulären
     expandBottomSheet("peek");
 
@@ -2527,34 +2518,7 @@ function switchTab(tabId) {
 }
 
 function initNavigationTree() {
-    // Koppla klick på hemskärmens primära åtgärdsknapp
-    const btnHomePlanRoute = document.getElementById("btn-home-plan-route");
-    if (btnHomePlanRoute) {
-        btnHomePlanRoute.addEventListener("click", () => {
-            switchTab("tab-route");
-        });
-    }
 
-    // Koppla klick på hemskärmens flytande sökruta
-    const floatingSearchBar = document.getElementById("floating-search-bar");
-    if (floatingSearchBar) {
-        floatingSearchBar.addEventListener("click", () => {
-            switchTab("tab-route");
-            // Markera "Rutter" som aktiv i hemskärmens brickor om de finns
-            document.querySelectorAll(".service-tile").forEach(t => t.classList.remove("active"));
-            const tileRoute = document.getElementById("tile-route");
-            if (tileRoute) tileRoute.classList.add("active");
-            
-            // Fokusera på destinationen
-            const endInput = document.getElementById("input-end");
-            if (endInput) {
-                setTimeout(() => {
-                    endInput.focus();
-                    endInput.select();
-                }, 150);
-            }
-        });
-    }
 
     // Koppla klick på hemskärmens brickor/knappar (om de finns)
     const tileRoute = document.getElementById("tile-route");
@@ -2611,6 +2575,88 @@ function initNavigationTree() {
             document.getElementById("input-end").value = "Strömsholm";
             switchTab("tab-route");
             document.getElementById("btn-find-route").click();
+        });
+    }
+}
+
+function initHomeRoutePlanner() {
+    const homeCalcBtn = document.getElementById("btn-home-calculate-route");
+    if (!homeCalcBtn) return;
+
+    // Aktivera autocomplete på hemskärmen
+    setupAutocomplete("home-input-start", "start");
+    setupAutocomplete("home-input-end", "end");
+
+    // Snabba val på hemskärmen
+    document.querySelectorAll(".shortcut-pill").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const start = btn.dataset.start;
+            const end = btn.dataset.end;
+            document.getElementById("home-input-start").value = start;
+            document.getElementById("home-input-end").value = end;
+            document.getElementById("input-start").value = start;
+            document.getElementById("input-end").value = end;
+            switchTab("tab-route");
+            document.getElementById("btn-find-route").click();
+        });
+    });
+
+    // Sökknapp hemskärm
+    homeCalcBtn.addEventListener("click", () => {
+        const startVal = document.getElementById("home-input-start").value.trim();
+        const endVal = document.getElementById("home-input-end").value.trim();
+        
+        if (!startVal || !endVal) {
+            alert("Vänligen fyll i både startplats och slutdestination.");
+            return;
+        }
+
+        document.getElementById("input-start").value = startVal;
+        document.getElementById("input-end").value = endVal;
+        
+        switchTab("tab-route");
+        document.getElementById("btn-find-route").click();
+    });
+
+    // GPS-knapp hemskärm
+    const btnHomeGps = document.getElementById("btn-home-gps");
+    if (btnHomeGps) {
+        btnHomeGps.addEventListener("click", () => {
+            const startInput = document.getElementById("home-input-start");
+            startInput.placeholder = "Hämtar din position...";
+            startInput.value = "";
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        startInput.value = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                        document.getElementById("input-start").value = startInput.value;
+                    },
+                    (error) => {
+                        console.error("Home GPS error:", error);
+                        startInput.placeholder = "Välj startplats";
+                        alert("Kunde inte hämta din position. Vänligen skriv in startplats manuellt.");
+                    },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            } else {
+                startInput.placeholder = "Välj startplats";
+                alert("Din webbläsare stöder inte GPS-positionering.");
+            }
+        });
+    }
+
+    // Swap-knapp hemskärm
+    const btnHomeSwap = document.getElementById("btn-home-swap");
+    if (btnHomeSwap) {
+        btnHomeSwap.addEventListener("click", () => {
+            const startInput = document.getElementById("home-input-start");
+            const endInput = document.getElementById("home-input-end");
+            const temp = startInput.value;
+            startInput.value = endInput.value;
+            endInput.value = temp;
         });
     }
 }

@@ -1002,65 +1002,206 @@ textarea:focus {
 }
 
 /* ----------------------------------------------------
- * FLOATING GOOGLE MAPS-LIKE SEARCH BAR
+ * HOME ROUTE PLANNING CARD & SERVICE TILES
  * ---------------------------------------------------- */
-.floating-search-bar {
-    position: absolute;
-    bottom: 40px;
-    left: calc(50% + 220px); /* Center in the map area on desktop */
-    transform: translateX(-50%);
-    width: 420px;
-    max-width: 90%;
-    height: 52px;
-    background-color: var(--card-bg);
+.route-planning-card {
+    padding: 16px;
+    border-radius: var(--radius-lg);
+    margin-top: 16px;
+    margin-bottom: 16px;
     border: 1px solid var(--border-color);
-    border-radius: 26px;
-    box-shadow: 0 4px 20px rgba(12, 35, 64, 0.15);
+    box-shadow: var(--shadow-sm);
+    background-color: var(--card-bg);
+}
+
+.route-planning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.route-planning-title {
+    margin: 0;
+    font-family: var(--font-title);
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.badge-nytt {
+    background-color: #d1fae5;
+    color: #065f46;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.route-input-group {
+    position: relative;
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
-    padding: 0 20px;
-    z-index: 1000;
-    cursor: pointer;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-sm);
+    padding: 2px 14px;
     transition: var(--transition-smooth);
 }
 
-.floating-search-bar:hover {
-    transform: translateX(-50%) scale(1.02);
-    box-shadow: 0 6px 24px rgba(12, 35, 64, 0.22);
+.route-input-group:focus-within {
     border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: #ffffff;
 }
 
-.floating-search-icon {
-    font-size: 18px;
+.input-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     margin-right: 12px;
-    color: var(--text-secondary);
+    flex-shrink: 0;
 }
 
-#floating-search-input {
+.dot-green {
+    background-color: #10b981;
+}
+
+.dot-red {
+    background-color: #ef4444;
+}
+
+.route-input-group input {
     flex: 1;
     border: none;
     background: transparent;
+    padding: 12px 0;
     outline: none;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.home-input-action {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 8px;
+    font-size: 16px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-smooth);
+    border-radius: 50%;
+}
+
+.home-input-action:hover {
+    background-color: #f1f5f9;
+    color: var(--accent-color);
+}
+
+.home-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.home-shortcuts span {
+    font-weight: 500;
+}
+
+.shortcut-pill {
+    border: 1px solid #cbd5e1;
+    background: var(--card-bg);
+    color: var(--text-color);
+    padding: 5px 12px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 500;
+    transition: var(--transition-smooth);
+}
+
+.shortcut-pill:hover {
+    border-color: var(--accent-color);
+    background-color: var(--primary-light);
+    color: var(--accent-color);
+}
+
+/* Service Tiles Grid on Home Tab */
+.service-tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.service-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
     color: var(--text-color);
     cursor: pointer;
+    transition: var(--transition-smooth);
+    font-family: inherit;
 }
 
-#floating-search-input::placeholder {
-    color: #94a3b8;
+.service-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--accent-color);
 }
 
-.floating-search-arrow {
-    font-size: 16px;
-    color: var(--accent-color);
-    font-weight: bold;
-    margin-left: 8px;
+.service-tile.active {
+    background-color: #0b3c22; /* Dark forest green */
+    border-color: #0b3c22;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(11, 60, 34, 0.2);
+}
+
+.service-tile .tile-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
     transition: transform 0.2s ease;
 }
 
-.floating-search-bar:hover .floating-search-arrow {
-    transform: translateX(3px);
+.service-tile:hover .tile-icon {
+    transform: scale(1.1);
+}
+
+.service-tile .tile-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+    display: block;
+}
+
+.service-tile.active .tile-label {
+    font-weight: 600;
+}
+
+.icon-sos {
+    color: #ef4444;
+}
+
+.service-tile.active .icon-sos {
+    color: #ffffff;
 }
 
 /* ----------------------------------------------------
@@ -1274,15 +1415,6 @@ textarea:focus {
         transition: var(--transition-smooth);
     }
 
-    .floating-search-bar {
-        left: 50%;
-        transform: translateX(-50%);
-        width: calc(100% - 32px);
-        max-width: 420px;
-        bottom: calc(45dvh + 16px);
-        transition: var(--transition-smooth);
-    }
-
     /* Bottom Sheet State Positions */
     
     /* COLLAPSED STATE: Only header handle + tabs */
@@ -1300,20 +1432,12 @@ textarea:focus {
         bottom: 156px;
     }
 
-    .sidebar.state-collapsed ~ .floating-search-bar {
-        bottom: 156px;
-    }
-
     /* PEEK STATE (DEFAULT) */
     .sidebar.state-peek {
         transform: translateY(40dvh); /* Shows 45dvh from bottom */
     }
     
     .sidebar.state-peek ~ .map-controls {
-        bottom: calc(45dvh + 16px);
-    }
-
-    .sidebar.state-peek ~ .floating-search-bar {
         bottom: calc(45dvh + 16px);
     }
 
@@ -1324,11 +1448,6 @@ textarea:focus {
 
     .sidebar.state-expanded ~ .map-controls {
         bottom: calc(85dvh + 16px);
-    }
-
-    .sidebar.state-expanded ~ .floating-search-bar {
-        bottom: calc(85dvh + 16px);
-        display: none !important;
     }
 }
 

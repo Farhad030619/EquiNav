@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260814_1831">
+    <link rel="stylesheet" href="index.css?v=20260814_1837">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -52,7 +52,59 @@
                         <p>Säker och optimerad navigation för dig och din häst.</p>
                     </div>
                     
-                    <!-- Primary Action Button (Räkna ut din rutt) - Hissad till flytande sökruta på kartan -->
+                    <!-- Planera din rutt Card (Google Maps Style) -->
+                    <div class="card route-planning-card">
+                        <div class="route-planning-header">
+                            <h3 class="route-planning-title">Planera din rutt</h3>
+                            <span class="badge-nytt">NYTT</span>
+                        </div>
+                        
+                        <!-- Start input -->
+                        <div class="route-input-group">
+                            <div class="input-dot dot-green"></div>
+                            <input type="text" id="home-input-start" placeholder="Välj startplats" value="Stockholm">
+                            <button class="home-input-action" id="btn-home-gps" title="Hitta min position">🎯</button>
+                        </div>
+                        
+                        <!-- End input -->
+                        <div class="route-input-group">
+                            <div class="input-dot dot-red"></div>
+                            <input type="text" id="home-input-end" placeholder="Välj slutdestination" value="Strömsholm">
+                            <button class="home-input-action" id="btn-home-swap" title="Växla start/mål">⇅</button>
+                        </div>
+                        
+                        <!-- Snabba val -->
+                        <div class="home-shortcuts">
+                            <span>Snabba val:</span>
+                            <button class="shortcut-pill" data-start="Stockholm" data-end="Strömsholm">Sthlm → Strömsholm</button>
+                            <button class="shortcut-pill" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
+                        </div>
+                        
+                        <!-- Räkna ut din rutt button -->
+                        <button class="btn btn-primary btn-main-action" id="btn-home-calculate-route">
+                            <span>🗺️</span> Räkna ut din rutt
+                        </button>
+                    </div>
+
+                    <!-- Service Tiles Grid -->
+                    <div class="service-tiles-grid">
+                        <button class="service-tile active" id="tile-route">
+                            <div class="tile-icon">🛣️</div>
+                            <span class="tile-label">Rutt & GPS</span>
+                        </button>
+                        <button class="service-tile" id="tile-calculator">
+                            <div class="tile-icon">⚖️</div>
+                            <span class="tile-label">Viktkalkyl</span>
+                        </button>
+                        <button class="service-tile" id="tile-hazards">
+                            <div class="tile-icon">⚠️</div>
+                            <span class="tile-label">Hinder</span>
+                        </button>
+                        <button class="service-tile" id="tile-emergency">
+                            <div class="tile-icon icon-sos">➕</div>
+                            <span class="tile-label">Akut SOS</span>
+                        </button>
+                    </div>
                     
                     <!-- Om oss Banner -->
                     <div class="card sponsored-card">
@@ -503,10 +555,7 @@
                     <span class="nav-icon">🏠</span>
                     <span class="nav-label">Hem</span>
                 </button>
-                <button class="tab-btn" data-tab="tab-route">
-                    <span class="nav-icon">🔄</span>
-                    <span class="nav-label">Rutter</span>
-                </button>
+
                 <button class="tab-btn" data-tab="tab-saved">
                     <span class="nav-icon">🔖</span>
                     <span class="nav-label">Sparat</span>
@@ -562,12 +611,7 @@
         <main class="map-container-wrapper">
             <div id="map"></div>
             
-            <!-- Floating Google Maps-like Search Bar (Home page only) -->
-            <div id="floating-search-bar" class="floating-search-bar">
-                <span class="floating-search-icon">🔍</span>
-                <input type="text" id="floating-search-input" placeholder="Vart vill du resa med hästen?" readonly>
-                <span class="floating-search-arrow">➔</span>
-            </div>
+
             
             <!-- Map Toast Warning -->
             <div id="map-toast" class="map-toast hidden">
@@ -706,9 +750,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- App Database layer -->
-    <script src="db.js?v=20260814_1831"></script>
+    <script src="db.js?v=20260814_1837"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260814_1831"></script>
+    <script src="app.js?v=20260814_1837"></script>
 </body>
 </html>
