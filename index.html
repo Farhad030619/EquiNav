@@ -14,7 +14,15 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260809_0159">
+    <link rel="stylesheet" href="index.css?v=20260814_1748">
+    
+    <!-- PWA Config -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0c2340">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EquiNav">
+    <link rel="apple-touch-icon" href="logo.png">
 </head>
 <body>
     <div class="app-container">
@@ -31,7 +39,7 @@
                 <div class="tab-panel active" id="tab-home">
                     <div class="home-header">
                         <div class="logo">
-                            <img src="logo.png?v=20260809_0159" alt="EquiNav Logo" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 4px; box-shadow: 0 2px 8px rgba(12, 35, 64, 0.08);">
+                            <img src="logo.png?v=20260814_1748" alt="EquiNav Logo" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 4px; box-shadow: 0 2px 8px rgba(12, 35, 64, 0.08);">
                             <h1 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-color); margin: 0; letter-spacing: -0.5px;">EquiNav</h1>
                         </div>
                         <button class="notification-btn" title="Aviseringar">
@@ -215,6 +223,9 @@
                     <div class="card">
                         <h3>Regnummerkoll & Viktkalkyl</h3>
                         <p class="section-intro">Kontrollera snabbt om din dragbil och släpkombination är laglig och matchar ditt körkort.</p>
+                        <p class="help-text" style="font-size: 11px; margin-top: -8px; margin-bottom: 12px; color: var(--text-secondary); background-color: var(--background-secondary); padding: 8px; border-radius: 8px; line-height: 1.4;">
+                            ℹ️ <strong>Testa med dessa regnr:</strong> Bilar: <code>SEO345</code> (Volvo XC90), <code>RTY789</code> (Tiguan), <code>GHE456</code> (Tesla Y). Släp: <code>TRL004</code> (Pegasus), <code>TRL001</code> (HB511), <code>TRL003</code> (Thule).
+                        </p>
                         
                         <div class="form-row">
                             <div class="form-group half">
@@ -620,6 +631,23 @@
                 </div>
             </div>
 
+            <!-- GPS Permission Error Modal Overlay -->
+            <div id="gps-error-modal" class="quick-hazard-modal hidden">
+                <div class="quick-hazard-content" style="text-align: center;">
+                    <button class="quick-card-close" id="btn-gps-error-close">×</button>
+                    <span style="font-size: 48px; display: block; margin-bottom: 10px;">📡</span>
+                    <h3 style="margin-bottom: 8px;">GPS-behörighet saknas</h3>
+                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 15px;" id="gps-error-text">
+                        För att kunna navigera live i realtid behöver EquiNav åtkomst till din enhets GPS. Vänligen tillåt platstjänster i din webbläsare.
+                    </p>
+                    <div style="background-color: var(--background-secondary); border-radius: 8px; padding: 12px; font-size: 12px; text-align: left; line-height: 1.4; margin-bottom: 15px; color: var(--text-main);">
+                        <strong>Hur man aktiverar på iPhone (Safari):</strong><br>
+                        Gå till Inställningar ➔ Integritet & Säkerhet ➔ Platstjänster ➔ Safari Webbplatser ➔ Välj "När appen används".
+                    </div>
+                    <button class="btn btn-primary" id="btn-gps-error-ok" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: 600;">Jag förstår</button>
+                </div>
+            </div>
+
             <!-- Quick Hazard Report Modal Overlay -->
             <div id="quick-hazard-modal" class="quick-hazard-modal hidden">
                 <div class="quick-hazard-content">
@@ -674,9 +702,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- App Database layer -->
-    <script src="db.js?v=20260809_0159"></script>
+    <script src="db.js?v=20260814_1748"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260809_0159"></script>
+    <script src="app.js?v=20260814_1748"></script>
 </body>
 </html>

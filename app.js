@@ -34,10 +34,15 @@ window.addEventListener("DOMContentLoaded", () => {
     initSOS();
     initMapControls();
     initAboutUsModal();
+    initGpsErrorModal();
     initNavigationTree();
     
-
-    
+    // Register Service Worker for PWA (offline support)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW: Registrerad med scope:', reg.scope))
+            .catch(err => console.error('SW: Registreringsfel:', err));
+    }
     // Visa välkomstmeddelande
     setTimeout(() => {
         showToast("Välkommen! Planera en rutt eller kolla fordonsvikter.", "🐎");
@@ -1904,7 +1909,22 @@ function startNavigation(isSimulation) {
             updateNavigationForCoordinates(currentPt);
         }, (err) => {
             console.error("GPS-fel:", err);
-            showToast("GPS-signal förlorad eller saknar behörighet.", "⚠️");
+            endNavigation();
+            
+            const gpsModal = document.getElementById("gps-error-modal");
+            if (gpsModal) {
+                gpsModal.classList.remove("hidden");
+                const errorTextEl = document.getElementById("gps-error-text");
+                if (errorTextEl) {
+                    if (err.code === 1) { // PERMISSION_DENIED
+                        errorTextEl.innerHTML = "För att kunna navigera i realtid behöver EquiNav åtkomst till din GPS-position. Du har nekat behörighet. Vänligen återställ dina behörighetsinställningar i webbläsaren för denna webbplats.";
+                    } else if (err.code === 3) { // TIMEOUT
+                        errorTextEl.innerHTML = "Det tog för lång tid att hämta din GPS-position. Kontrollera att du befinner dig utomhus med fri sikt mot himlen och försök igen.";
+                    } else {
+                        errorTextEl.innerHTML = "Ett okänt GPS-fel eller nätverksfel inträffade. Kontrollera att din enhets platstjänster är aktiverade och försök igen.";
+                    }
+                }
+            }
         }, {
             enableHighAccuracy: true,
             maximumAge: 0,
@@ -2309,6 +2329,32 @@ function initAboutUsModal() {
         aboutUsModal.addEventListener("click", (e) => {
             if (e.target === aboutUsModal) {
                 aboutUsModal.classList.add("hidden");
+            }
+        });
+    }
+}
+
+function initGpsErrorModal() {
+    const gpsErrorModal = document.getElementById("gps-error-modal");
+    const btnGpsClose = document.getElementById("btn-gps-error-close");
+    const btnGpsOk = document.getElementById("btn-gps-error-ok");
+
+    if (btnGpsClose && gpsErrorModal) {
+        btnGpsClose.addEventListener("click", () => {
+            gpsErrorModal.classList.add("hidden");
+        });
+    }
+
+    if (btnGpsOk && gpsErrorModal) {
+        btnGpsOk.addEventListener("click", () => {
+            gpsErrorModal.classList.add("hidden");
+        });
+    }
+
+    if (gpsErrorModal) {
+        gpsErrorModal.addEventListener("click", (e) => {
+            if (e.target === gpsErrorModal) {
+                gpsErrorModal.classList.add("hidden");
             }
         });
     }
