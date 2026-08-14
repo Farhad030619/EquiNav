@@ -35,6 +35,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initMapControls();
     initAboutUsModal();
     initGpsErrorModal();
+    initProfileSettings();
     initNavigationTree();
     
     // Register Service Worker for PWA (offline support)
@@ -793,7 +794,7 @@ function initRoutePlanner() {
 
                 const startTime = Date.now();
 
-                fetchOSRMRoute(startCoord, endCoord, (routeData) => {
+                fetchRoute(startCoord, endCoord, (routeData) => {
                     const elapsed = Date.now() - startTime;
                     const delay = Math.max(0, 2200 - elapsed); // Stanna i minst 2.2 sekunder för att simulera beräkning
 
@@ -861,6 +862,115 @@ function fetchOSRMRoute(start, end, callback) {
             console.error("OSRM error:", err);
             callback(null);
         });
+}
+
+function fetchRoute(start, end, callback) {
+    let orsKey = localStorage.getItem("ors_api_key");
+    if (!orsKey || orsKey.trim().length === 0) {
+        // Hårdkodad standardnyckel för appen så den fungerar direkt för testare
+        orsKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkNDNjM2NmZmE1ZDQxYTQ5MDE5NTJkMmRlOWU5ZmExIiwiaCI6Im11cm11cjY0In0=";
+    }
+
+    if (orsKey && orsKey.trim().length > 0) {
+        console.log("app: Använder OpenRouteService för ruttplanering...");
+        fetchOpenRouteServiceRoute(start, end, orsKey.trim())
+            .then(routeData => {
+                callback(routeData);
+            })
+            .catch(err => {
+                console.error("ORS-fel, faller tillbaka på OSRM:", err);
+                showToast("Kunde inte hämta ORS-rutt. Använder fallback-motor.", "⚠️");
+                fetchOSRMRoute(start, end, callback);
+            });
+    } else {
+        console.log("app: Ingen ORS-nyckel angiven. Använder OSRM-motor.");
+        fetchOSRMRoute(start, end, callback);
+    }
+}
+
+async function fetchOpenRouteServiceRoute(start, end, apiKey) {
+    const url = "https://api.heigit.org/v2/directions/driving-car/geojson";
+    
+    const body = {
+        coordinates: [
+            [start[1], start[0]],
+            [end[1], end[0]]
+        ],
+        extra_info: ["maxspeed"],
+        language: "sv"
+    };
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": apiKey
+        },
+        body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`ORS API Error: ${response.status} - ${errText}`);
+    }
+
+    const data = await response.json();
+    if (!data.features || data.features.length === 0) {
+        throw new Error("Ingen rutt hittades via OpenRouteService.");
+    }
+
+    return transformORSToStandardRoute(data.features[0]);
+}
+
+function transformORSToStandardRoute(orsFeature) {
+    const properties = orsFeature.properties;
+    const geometry = orsFeature.geometry;
+    const segment = properties.segments[0];
+    const extras = properties.extras;
+
+    return {
+        distance: properties.summary.distance,
+        duration: properties.summary.duration,
+        geometry: geometry,
+        legs: [
+            {
+                distance: segment.distance,
+                duration: segment.duration,
+                steps: segment.steps.map(step => {
+                    let speedLimit = null;
+                    if (extras && extras.maxspeed && extras.maxspeed.values) {
+                        const [startIdx, endIdx] = step.way_points;
+                        const match = extras.maxspeed.values.find(val => {
+                            const [vStart, vEnd, vSpeed] = val;
+                            return (startIdx <= vEnd && endIdx >= vStart);
+                        });
+                        if (match && match[2] > 0) {
+                            speedLimit = match[2];
+                        }
+                    }
+
+                    let type = "continue";
+                    let modifier = "";
+                    const orsCode = step.type;
+                    if (orsCode === 0 || orsCode === 4) { type = "turn"; modifier = "left"; }
+                    else if (orsCode === 1 || orsCode === 5) { type = "turn"; modifier = "right"; }
+                    else if (orsCode === 6) { type = "roundabout"; }
+
+                    return {
+                        distance: step.distance,
+                        duration: step.duration,
+                        name: step.name || "unnamed",
+                        instruction: step.instruction,
+                        speedLimit: speedLimit,
+                        maneuver: {
+                            type: type,
+                            modifier: modifier
+                        }
+                    };
+                })
+            }
+        ]
+    };
 }
 
 function generateFallbackRoute(start, end) {
@@ -944,6 +1054,13 @@ function getSwedishRoadSpeedLimit(streetName, stepDistance, stepDuration) {
     return 50;
 }
 
+function getSpeedLimitForStep(step, stepDuration) {
+    if (step.speedLimit !== undefined && step.speedLimit !== null) {
+        return step.speedLimit;
+    }
+    return getSwedishRoadSpeedLimit(step.name || "", step.distance || 0, stepDuration || 0);
+}
+
 function calculateHorseDurationForStep(step, route) {
     const distanceMeters = step.distance || 0;
     let stepDuration = step.duration;
@@ -956,7 +1073,7 @@ function calculateHorseDurationForStep(step, route) {
     if (distanceMeters <= 0 || stepDuration <= 0) return 0;
     
     const streetName = (step.name || "").trim();
-    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
+    const speedLimit = getSpeedLimitForStep(step, stepDuration);
     
     let horseDuration = 0;
     if (speedLimit >= 90) {
@@ -992,7 +1109,7 @@ function calculateCarDurationForStep(step, route) {
     if (distanceMeters <= 0 || stepDuration <= 0) return 0;
     
     const streetName = (step.name || "").trim();
-    const speedLimit = getSwedishRoadSpeedLimit(streetName, distanceMeters, stepDuration);
+    const speedLimit = getSpeedLimitForStep(step, stepDuration);
     
     if (speedLimit >= 90) {
         // För motorvägar/riksvägar: beräkna baserat på verklig hastighetsgräns (110 km/h standard) + 5% trafikmarginal.
@@ -2108,7 +2225,7 @@ function recalculateRouteFromCurrentPosition(currentPt) {
     showToast("Ruttar om ekipage...", "🔄");
     console.log("app: Rerouting from current location to destination:", destinationCoordinates);
     
-    fetchOSRMRoute(currentPt, destinationCoordinates, (newRoute) => {
+    fetchRoute(currentPt, destinationCoordinates, (newRoute) => {
         isRerouting = false;
         
         if (!newRoute) {
@@ -2265,8 +2382,14 @@ function setupAutocomplete(inputId, type) {
                         const div = document.createElement("div");
                         div.className = "suggestion-item";
                         
-                        // Formatera visningsnamnet (ta bort t.ex. ", Sverige" för renare UI)
-                        const displayName = item.display_name.replace(", Sverige", "").replace(", Sweden", "");
+                        // Formatera visningsnamnet (ta bort t.ex. ", Sverige" och postnummer för renare UI)
+                        let displayName = item.display_name.replace(", Sverige", "").replace(", Sweden", "");
+                        // Regex för att matcha svenska postnummer (t.ex. ", 762 41" eller ", 16440")
+                        displayName = displayName.replace(/,?\s*\b\d{3}\s*\d{2}\b/g, "").replace(/,?\s*\b\d{5}\b/g, "");
+                        displayName = displayName.replace(/,\s*,/g, ",").trim();
+                        if (displayName.endsWith(",")) {
+                            displayName = displayName.slice(0, -1).trim();
+                        }
                         div.innerHTML = `📍 <span>${displayName}</span>`;
                         
                         div.addEventListener("click", () => {
@@ -2356,6 +2479,21 @@ function initGpsErrorModal() {
             if (e.target === gpsErrorModal) {
                 gpsErrorModal.classList.add("hidden");
             }
+        });
+    }
+}
+
+function initProfileSettings() {
+    const orsKeyInput = document.getElementById("profile-ors-key");
+    if (orsKeyInput) {
+        const savedKey = localStorage.getItem("ors_api_key");
+        if (savedKey) {
+            orsKeyInput.value = savedKey;
+        }
+
+        orsKeyInput.addEventListener("input", () => {
+            const key = orsKeyInput.value.trim();
+            localStorage.setItem("ors_api_key", key);
         });
     }
 }
