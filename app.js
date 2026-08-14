@@ -865,11 +865,8 @@ function fetchOSRMRoute(start, end, callback) {
 }
 
 function fetchRoute(start, end, callback) {
-    let orsKey = localStorage.getItem("ors_api_key");
-    if (!orsKey || orsKey.trim().length === 0) {
-        // Hårdkodad standardnyckel för appen så den fungerar direkt för testare
-        orsKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkNDNjM2NmZmE1ZDQxYTQ5MDE5NTJkMmRlOWU5ZmExIiwiaCI6Im11cm11cjY0In0=";
-    }
+    // Använd alltid den hårdkodade master-API-nyckeln för OpenRouteService
+    const orsKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjVkNDNjM2NmZmE1ZDQxYTQ5MDE5NTJkMmRlOWU5ZmExIiwiaCI6Im11cm11cjY0In0=";
 
     if (orsKey && orsKey.trim().length > 0) {
         console.log("app: Använder OpenRouteService för ruttplanering...");
@@ -2484,18 +2481,7 @@ function initGpsErrorModal() {
 }
 
 function initProfileSettings() {
-    const orsKeyInput = document.getElementById("profile-ors-key");
-    if (orsKeyInput) {
-        const savedKey = localStorage.getItem("ors_api_key");
-        if (savedKey) {
-            orsKeyInput.value = savedKey;
-        }
-
-        orsKeyInput.addEventListener("input", () => {
-            const key = orsKeyInput.value.trim();
-            localStorage.setItem("ors_api_key", key);
-        });
-    }
+    // Profilinställningar lagras lokalt
 }
 
 function switchTab(tabId) {
