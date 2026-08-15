@@ -48,40 +48,60 @@
 
 body, html {
     font-family: var(--font-body);
-    background-color: var(--bg-color);
+    background-color: #0f172a; /* Slate 900 background for desktop letterboxing */
     color: var(--text-color);
     width: 100%;
     height: 100%;
     height: 100dvh;
     overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* App Container */
+/* App Container - Mobile viewport simulation on desktop */
 .app-container {
     display: flex;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    max-width: 440px; /* Constrain viewport to standard mobile width */
+    height: 100%;
     height: 100dvh;
     position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    background-color: var(--bg-color);
+    overflow: hidden;
 }
 
 /* ----------------------------------------------------
  * SIDEBAR & BOTTOM SHEET (DESKTOP / MOBILE LAYOUT)
  * ---------------------------------------------------- */
 .sidebar {
-    width: 440px;
-    height: 100%;
-    background-color: var(--card-bg);
-    border-right: 1px solid var(--border-color);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh;
+    border-right: none;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
+    z-index: 1001;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    z-index: 1000;
-    box-shadow: var(--shadow-md);
-    transition: var(--transition-smooth);
+    background-color: var(--card-bg);
+    
+    /* Smooth transform transitions */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(calc(100dvh - 200px));
+}
+
+.sidebar.dragging {
+    transition: none !important;
 }
 
 .bottom-sheet-handle {
-    display: none;
+    display: block; /* Always visible drag handle */
     width: 40px;
     height: 5px;
     background-color: #cbd5e1;
@@ -1335,175 +1355,128 @@ textarea:focus {
 }
 
 /* ----------------------------------------------------
- * MOBILE ADAPTIONS (PEEK & BOTTOM SHEET LOGIC)
+ * MOBILE & TABLET UNIFIED PEEK & BOTTOM SHEET LOGIC
  * ---------------------------------------------------- */
-@media (max-width: 768px) {
-    .app-container {
-        flex-direction: column;
-    }
-
-    .map-container-wrapper {
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 1;
-    }
-    .sidebar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 100dvh;
-        border-right: none;
-        border-top-left-radius: var(--radius-lg);
-        border-top-right-radius: var(--radius-lg);
-        box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
-        z-index: 1001;
-        overflow: hidden;
-        
-        /* Smooth transform transitions */
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        transform: translateY(calc(100dvh - 200px));
-    }
-
-    .sidebar.state-collapsed {
-        transform: translateY(calc(100dvh - 60px));
-    }
-
-    .sidebar.state-peek {
-        transform: translateY(calc(100dvh - 200px));
-    }
-
-    .sidebar.state-expanded {
-        transform: translateY(0);
-    }
-
-    .sidebar.dragging {
-        transition: none !important;
-    }
-
-    .bottom-sheet-handle {
-        display: block; /* Visible handle */
-    }
-
-    .sidebar-header {
-        padding: 12px 20px 8px 20px;
-    }
-
-    .logo h1 {
-        font-size: 20px;
-    }
-
-    .tagline {
-        display: none; /* Hide tagline to save vertical space on mobile */
-    }
-
-    .sidebar-tabs {
-        padding: 4px 10px;
-    }
-
-    .tab-btn {
-        padding: 8px 2px;
-    }
-
-    .sidebar-content {
-        padding: 16px;
-    }
-
-    .card {
-        padding: 16px;
-    }
-
-    /* Floating map controls on mobile position shifts */
-    .map-controls {
-        top: auto;
-        bottom: calc(45dvh + 16px); /* Floats right above bottom sheet peek */
-        right: 16px;
-        transition: var(--transition-smooth);
-    }
-
-    /* Bottom Sheet State Positions */
-    
-    /* COLLAPSED STATE: Only header handle + tabs */
-    .sidebar.state-collapsed {
-        transform: translateY(calc(85dvh - 140px));
-    }
-
-    .sidebar.state-collapsed .sidebar-content,
-    .sidebar.state-collapsed .sidebar-footer,
-    .sidebar.state-collapsed .tagline {
-        display: none !important;
-    }
-
-    .sidebar.state-collapsed ~ .map-controls {
-        bottom: 156px;
-    }
-
-    /* PEEK STATE (DEFAULT) */
-    .sidebar.state-peek {
-        transform: translateY(40dvh); /* Shows 45dvh from bottom */
-    }
-    
-    .sidebar.state-peek ~ .map-controls {
-        bottom: calc(45dvh + 16px);
-    }
-
-    /* EXPANDED STATE (ALMOST FULLSCREEN) */
-    .sidebar.state-expanded {
-        transform: translateY(0);
-    }
-
-    .sidebar.state-expanded ~ .map-controls {
-        bottom: calc(85dvh + 16px);
-    }
+.app-container {
+    flex-direction: column;
 }
 
-/* ----------------------------------------------------
- * DESKTOP FLOATING SIDEBAR RESTYLING (GOOGLE MAPS AESTHETIC)
- * ---------------------------------------------------- */
-@media (min-width: 769px) {
-    .app-container {
-        position: relative;
-        display: block;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-    }
+.map-container-wrapper {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.sidebar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100dvh;
+    border-right: none;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.1);
+    z-index: 1001;
+    overflow: hidden;
     
-    .sidebar {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        bottom: 20px;
-        z-index: 1000;
-        width: 420px;
-        height: calc(100vh - 40px);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-lg);
-        border: 1px solid var(--border-color);
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(10px);
-        transition: var(--transition-smooth);
-    }
-    
-    .map-container-wrapper {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1;
-        height: 100%;
-        width: 100%;
-    }
-    
-    /* Adjust map controls on desktop to float clean at topright */
-    .map-controls {
-        top: 20px;
-        right: 20px;
-    }
+    /* Smooth transform transitions */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(calc(100dvh - 200px));
+}
+
+.sidebar.state-collapsed {
+    transform: translateY(calc(100dvh - 60px));
+}
+
+.sidebar.state-peek {
+    transform: translateY(calc(100dvh - 200px));
+}
+
+.sidebar.state-expanded {
+    transform: translateY(0);
+}
+
+.sidebar.dragging {
+    transition: none !important;
+}
+
+.bottom-sheet-handle {
+    display: block; /* Visible handle */
+}
+
+.sidebar-header {
+    padding: 12px 20px 8px 20px;
+}
+
+.logo h1 {
+    font-size: 20px;
+}
+
+.tagline {
+    display: none; /* Hide tagline to save vertical space on mobile */
+}
+
+.sidebar-tabs {
+    padding: 4px 10px;
+}
+
+.tab-btn {
+    padding: 8px 2px;
+}
+
+.sidebar-content {
+    padding: 16px;
+}
+
+.card {
+    padding: 16px;
+}
+
+/* Floating map controls on mobile position shifts */
+.map-controls {
+    top: auto;
+    bottom: calc(45dvh + 16px); /* Floats right above bottom sheet peek */
+    right: 16px;
+    transition: var(--transition-smooth);
+}
+
+/* Bottom Sheet State Positions */
+
+/* COLLAPSED STATE: Only header handle + tabs */
+.sidebar.state-collapsed {
+    transform: translateY(calc(85dvh - 140px));
+}
+
+.sidebar.state-collapsed .sidebar-content,
+.sidebar.state-collapsed .sidebar-footer,
+.sidebar.state-collapsed .tagline {
+    display: none !important;
+}
+
+.sidebar.state-collapsed ~ .map-controls {
+    bottom: 156px;
+}
+
+/* PEEK STATE (DEFAULT) */
+.sidebar.state-peek {
+    transform: translateY(40dvh); /* Shows 45dvh from bottom */
+}
+
+.sidebar.state-peek ~ .map-controls {
+    bottom: calc(45dvh + 16px);
+}
+
+/* EXPANDED STATE (ALMOST FULLSCREEN) */
+.sidebar.state-expanded {
+    transform: translateY(0);
+}
+
+.sidebar.state-expanded ~ .map-controls {
+    bottom: calc(85dvh + 16px);
 }
 
 /* ----------------------------------------------------
