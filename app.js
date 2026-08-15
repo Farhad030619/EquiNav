@@ -1525,7 +1525,7 @@ function renderHazardsList() {
 
     sorted.forEach(hazard => {
         const item = document.createElement("div");
-        item.className = "hazard-item";
+        item.className = `hazard-item ${hazard.type}`;
         item.innerHTML = `
             <div class="hazard-icon-box">${hazardEmojis[hazard.type] || "⚠️"}</div>
             <div class="hazard-info">
