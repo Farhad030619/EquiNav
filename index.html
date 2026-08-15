@@ -338,66 +338,91 @@
 
                 <!-- Tab: Weight & License Calculator -->
                 <div class="tab-panel" id="tab-calculator">
-                    <div class="panel-header">
-                        <button class="btn-back-to-home">←</button>
-                        <h3>Viktkalkyl</h3>
-                        <div style="width: 24px;"></div>
+                    <div class="panel-header" style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <button class="btn-back-to-home" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background-color: #f3f4f6; border: none; cursor: pointer; color: var(--text-color); margin-right: 12px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: var(--primary-color); margin: 0;">Viktkalkyl</h3>
                     </div>
-                    <div class="card">
-                        <h3>Regnummerkoll & Viktkalkyl</h3>
-                        <p class="section-intro">Kontrollera snabbt om din dragbil och släpkombination är laglig och matchar ditt körkort.</p>
-                        <p class="help-text" style="font-size: 11px; margin-top: -8px; margin-bottom: 12px; color: var(--text-secondary); background-color: var(--background-secondary); padding: 8px; border-radius: 8px; line-height: 1.4;">
-                            ℹ️ <strong>Testa med dessa regnr:</strong> Bilar: <code>SEO345</code> (Volvo XC90), <code>RTY789</code> (Tiguan), <code>GHE456</code> (Tesla Y). Släp: <code>TRL004</code> (Pegasus), <code>TRL001</code> (HB511), <code>TRL003</code> (Thule).
-                        </p>
-                        
-                        <div class="form-row">
-                            <div class="form-group half">
-                                <label for="calc-car-reg">Regnr Bil</label>
-                                <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                    <p class="section-intro" style="font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin: 0 4px 16px 4px;">Kontrollera att din dragbil och släpkombination är laglig utifrån ditt körkort.</p>
+                    
+                    <div class="card" style="padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); background-color: #ffffff; margin-bottom: 16px;">
+                        <div class="form-row" style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <div class="form-group half" style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                                <label for="calc-car-reg" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Regnr Bil</label>
+                                <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345" style="width: 100%; border: 1px solid var(--border-color); background-color: #f9fafb; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--primary-color); outline: none;">
                             </div>
-                            <div class="form-group half">
-                                <label for="calc-trailer-reg">Regnr Släp</label>
-                                <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                            <div class="form-group half" style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                                <label for="calc-trailer-reg" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Regnr Släp</label>
+                                <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004" style="width: 100%; border: 1px solid var(--border-color); background-color: #f9fafb; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 600; text-transform: uppercase; color: var(--primary-color); outline: none;">
                             </div>
                         </div>
                         
-                        <div class="form-group">
-                            <label for="calc-horse-weight">Hästens vikt (kg)</label>
-                            <div class="input-with-unit">
-                                <input type="number" id="calc-horse-weight" placeholder="T.ex. 600" value="600">
-                                <span class="unit">kg</span>
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                            <label for="calc-horse-weight" style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Hästens vikt</label>
+                            <div class="input-with-unit" style="position: relative; display: flex; align-items: center; width: 100%;">
+                                <input type="number" id="calc-horse-weight" placeholder="T.ex. 600" value="600" style="width: 100%; border: 1px solid var(--border-color); background-color: #f9fafb; padding: 12px 40px 12px 12px; border-radius: 12px; font-size: 14px; font-weight: 600; color: var(--primary-color); outline: none;">
+                                <span class="unit" style="position: absolute; right: 14px; font-size: 14px; color: var(--text-secondary); font-weight: 500;">kg</span>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Ditt körkort</label>
-                            <div class="radio-group">
+                        <div class="form-group" style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Ditt körkort</label>
+                            <div class="radio-group" style="display: flex; flex-direction: column; gap: 8px;">
                                 <label class="radio-label">
                                     <input type="radio" name="license-type" value="B" checked>
                                     <div class="radio-custom">
-                                        <strong>B-kort</strong>
-                                        <span>Max 3500kg tågvikt</span>
+                                        <div class="radio-custom-content" style="display: flex; flex-direction: column; gap: 2px;">
+                                            <strong style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;">B-kort</strong>
+                                            <span style="font-size: 11px; color: var(--text-secondary);">Max 3500kg tågvikt</span>
+                                        </div>
+                                        <div class="radio-checked-icon" style="color: #345735;">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                        </div>
                                     </div>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="license-type" value="B96">
                                     <div class="radio-custom">
-                                        <strong>B96 (Utökad)</strong>
-                                        <span>Max 4250kg tågvikt</span>
+                                        <div class="radio-custom-content" style="display: flex; flex-direction: column; gap: 2px;">
+                                            <strong style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;">B96 (utökad)</strong>
+                                            <span style="font-size: 11px; color: var(--text-secondary);">Max 4250kg tågvikt</span>
+                                        </div>
+                                        <div class="radio-checked-icon" style="color: #345735;">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                        </div>
                                     </div>
                                 </label>
-                                <label class="radio-label">
+                                <label class="radio-label" style="display: none;"> <!-- Keep BE in code but hidden to strictly match mockup options -->
                                     <input type="radio" name="license-type" value="BE">
                                     <div class="radio-custom">
-                                        <strong>BE-kort</strong>
-                                        <span>Släp upp till 3500kg</span>
+                                        <div class="radio-custom-content" style="display: flex; flex-direction: column; gap: 2px;">
+                                            <strong style="font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;">BE-kort</strong>
+                                            <span style="font-size: 11px; color: var(--text-secondary);">Släp upp till 3500kg</span>
+                                        </div>
+                                        <div class="radio-checked-icon" style="color: #345735;">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                        </div>
                                     </div>
                                 </label>
                             </div>
                         </div>
-                        
-                        <button id="btn-calculate-weights" class="btn btn-primary">Kontrollera kombination</button>
                     </div>
+                    
+                    <!-- Main calculation button below card -->
+                    <button id="btn-calculate-weights" class="btn btn-primary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 14px; font-size: 14px; border-radius: 12px; margin-bottom: 20px;">Kontrollera kombination</button>
 
                     <!-- Calculator Results -->
                     <div id="calculator-results" class="results-container hidden">

@@ -470,19 +470,20 @@ textarea:focus {
 
 .radio-custom {
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    padding: 12px 16px;
+    border-radius: 16px;
+    padding: 14px 20px;
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     transition: var(--transition-smooth);
-    background-color: #fcfdfe;
+    background-color: #ffffff;
 }
 
 .radio-label input[type="radio"]:checked + .radio-custom {
-    border-color: var(--accent-color);
-    background-color: var(--primary-light);
-    box-shadow: 0 0 0 1px var(--accent-color);
+    border-color: #345735;
+    background-color: #eaf3ed;
+    box-shadow: none;
 }
 
 .radio-custom strong {
@@ -493,6 +494,16 @@ textarea:focus {
 .radio-custom span {
     font-size: 11px;
     color: var(--text-secondary);
+}
+
+.radio-checked-icon {
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.radio-label input[type="radio"]:checked + .radio-custom .radio-checked-icon {
+    display: flex;
 }
 
 /* Tab Panels */
