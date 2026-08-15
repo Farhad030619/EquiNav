@@ -38,51 +38,84 @@
                 <!-- Tab: Home / Dashboard -->
                 <div class="tab-panel active" id="tab-home">
                     <div class="home-header">
-                        <div class="logo">
-                            <img src="logo.png?v=20260814_1808" alt="EquiNav Logo" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; margin-right: 4px; box-shadow: 0 2px 8px rgba(12, 35, 64, 0.08);">
-                            <h1 style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary-color); margin: 0; letter-spacing: -0.5px;">EquiNav</h1>
+                        <div class="logo" style="display: flex; align-items: center;">
+                            <img src="logo.png?v=20260814_1900" alt="EquiNav Logo" style="width: 36px; height: 36px; border-radius: 10px; object-fit: cover; margin-right: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+                            <h1 style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 700; color: var(--primary-color); margin: 0; letter-spacing: -0.5px;">EquiNav</h1>
                         </div>
-                        <button class="notification-btn" title="Aviseringar">
-                            <span>🔔</span>
+                        <button class="notification-btn" title="Aviseringar" style="position: relative; background: none; border: none; padding: 6px; cursor: pointer; color: var(--text-color); display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <span class="notification-dot" style="position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; background-color: #ef4444; border-radius: 50%; border: 1.5px solid #ffffff;"></span>
                         </button>
                     </div>
                     
-                    <div class="home-welcome">
-                        <h2>Välkommen!</h2>
-                        <p>Säker och optimerad navigation för dig och din häst.</p>
+                    <div class="home-welcome" style="margin-top: 15px;">
+                        <h2 style="font-size: 24px; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--primary-color); margin-bottom: 4px;">Välkommen!</h2>
+                        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.4;">Säker och optimerad navigation för dig och din häst.</p>
                     </div>
                     
                     <!-- Planera din rutt Card (Google Maps Style) -->
-                    <div class="card route-planning-card">
-                        <div class="route-planning-header">
-                            <h3 class="route-planning-title">Planera din rutt</h3>
-                            <span class="badge-nytt">NYTT</span>
+                    <div class="card route-planning-card" style="margin-top: 20px;">
+                        <div class="route-planning-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <h3 class="route-planning-title" style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 600; color: var(--primary-color); margin: 0;">Planera din rutt</h3>
+                            <span class="badge-nytt" style="background-color: #d1fae5; color: #065f46; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">NYTT</span>
                         </div>
                         
                         <!-- Start input -->
                         <div class="route-input-group">
-                            <div class="input-dot dot-green"></div>
+                            <div class="input-icon-left" style="margin-right: 12px; display: flex; align-items: center; color: #345735;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                    <circle cx="12" cy="12" r="6"></circle>
+                                </svg>
+                            </div>
                             <input type="text" id="home-input-start" placeholder="Välj startplats" value="Stockholm">
-                            <button class="home-input-action" id="btn-home-gps" title="Hitta min position">🎯</button>
+                            <button class="home-input-action" id="btn-home-gps" title="Hitta min position" style="color: #64748b; background: none; border: none; cursor: pointer; display: flex; align-items: center;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                </svg>
+                            </button>
                         </div>
                         
                         <!-- End input -->
                         <div class="route-input-group">
-                            <div class="input-dot dot-red"></div>
+                            <div class="input-icon-left" style="margin-right: 12px; display: flex; align-items: center; color: #d97706;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                            </div>
                             <input type="text" id="home-input-end" placeholder="Välj slutdestination" value="Strömsholm">
-                            <button class="home-input-action" id="btn-home-swap" title="Växla start/mål">⇅</button>
+                            <button class="home-input-action" id="btn-home-swap" title="Växla start/mål" style="color: #64748b; background: none; border: none; cursor: pointer; display: flex; align-items: center;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="17 11 21 7 17 3"></polyline>
+                                    <line x1="21" y1="7" x2="9" y2="7"></line>
+                                    <polyline points="7 13 3 17 7 21"></polyline>
+                                    <line x1="3" y1="17" x2="15" y2="17"></line>
+                                </svg>
+                            </button>
                         </div>
                         
                         <!-- Snabba val -->
-                        <div class="home-shortcuts">
-                            <span>Snabba val:</span>
-                            <button class="shortcut-pill" data-start="Stockholm" data-end="Strömsholm">Sthlm → Strömsholm</button>
-                            <button class="shortcut-pill" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
+                        <div class="home-shortcuts" style="margin: 12px 0 16px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 12px; color: var(--text-secondary);">Snabba val:</span>
+                            <button class="shortcut-pill" data-start="Stockholm" data-end="Strömsholm" style="background-color: #f3f4f6; border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text-color); font-weight: 500;">Sthlm → Strömsholm</button>
+                            <button class="shortcut-pill" data-start="Göteborg" data-end="Uddevalla" style="background-color: #f3f4f6; border: none; border-radius: 20px; padding: 6px 12px; font-size: 12px; cursor: pointer; color: var(--text-color); font-weight: 500;">Gbg → Uddevalla</button>
                         </div>
                         
                         <!-- Räkna ut din rutt button -->
-                        <button class="btn btn-primary btn-main-action" id="btn-home-calculate-route">
-                            <span>🗺️</span> Räkna ut din rutt
+                        <button class="btn btn-primary btn-main-action" id="btn-home-calculate-route" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; padding: 12px; font-size: 14px; border-radius: 12px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="6" cy="19" r="3"></circle>
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <path d="M9 19h4a5 5 0 0 0 5-5v-6"></path>
+                            </svg>
+                            Räkna ut din rutt
                         </button>
                     </div>
 
@@ -90,27 +123,43 @@
                     
                     <!-- Om oss Banner -->
                     <div class="card sponsored-card">
-                        <div class="sponsored-badge" style="background-color: var(--primary-color);">Om oss</div>
+                        <div class="sponsored-badge">Om oss</div>
                         <div class="sponsored-content">
-                            <h4>Vårt mål med EquiNav</h4>
-                            <p>Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
+                            <h4 style="font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 8px;">Vårt mål med EquiNav</h4>
+                            <p style="font-size: 13px; line-height: 1.5; color: rgba(255, 255, 255, 0.85); margin-bottom: 12px;">Vi vill skapa en säkrare och tryggare väg för alla hästar. Genom intelligent ruttplanering som undviker stressande kurvor, branta backar och farliga väghinder hjälper vi dig att skydda hästens balans och välmående hela vägen fram.</p>
                             <button class="btn-sponsored" id="btn-read-about">
                                 <span>Läs mer om oss</span>
-                                <span>→</span>
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
                             </button>
                         </div>
                     </div>
                     
                     <!-- Recent Routes -->
-                    <div class="recent-routes-section">
-                        <h3>Senaste rutter</h3>
-                        <div class="recent-route-item" id="recent-route-stockholm">
-                            <div class="route-item-icon">📍</div>
-                            <div class="route-item-details">
-                                <strong>Stockholm → Strömsholm</strong>
-                                <span>202.4 km • 2h 45m</span>
+                    <div class="recent-routes-section" style="margin-top: 25px;">
+                        <div class="recent-routes-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 600; color: var(--primary-color); margin: 0;">Senaste rutter</h3>
+                            <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500; cursor: pointer;">Visa alla</span>
+                        </div>
+                        <div class="recent-route-item" id="recent-route-stockholm" style="display: flex; align-items: center; background-color: #ffffff; border: 1px solid var(--border-color); padding: 14px 16px; border-radius: 16px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+                            <div class="route-item-icon" style="background-color: #eaf3ed; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #345735; margin-right: 12px; flex-shrink: 0;">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="6" cy="19" r="3"></circle>
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <path d="M9 19h4a5 5 0 0 0 5-5v-6"></path>
+                                </svg>
                             </div>
-                            <div class="route-item-arrow">→</div>
+                            <div class="route-item-details" style="flex: 1;">
+                                <strong style="display: block; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; color: var(--primary-color); margin-bottom: 2px;">Stockholm → Strömsholm</strong>
+                                <span style="font-size: 12px; color: var(--text-secondary);">202.4 km • 2h 45m</span>
+                            </div>
+                            <div class="route-item-arrow" style="color: #9ca3af; display: flex; align-items: center; justify-content: center;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
