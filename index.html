@@ -577,19 +577,24 @@
                 <!-- Tab: Emergency SOS -->
                 <div class="tab-panel" id="tab-emergency">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">←</button>
-                        <h3>Akut SOS</h3>
-                        <div style="width: 24px;"></div>
+                        <button class="btn-back-to-home" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background-color: #f3f4f6; border: none; cursor: pointer; color: var(--text-color); margin-right: 12px;">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <h3 style="font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: var(--primary-color); margin: 0;">Akut SOS</h3>
                     </div>
-                    <div class="card sos-card">
+                    <p class="section-intro" style="font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin: 0 4px 16px 4px;">Om en olycka sker eller om hästen blir akut sjuk under transporten klicka på knappen nedan.</p>
+                    
+                    <div class="sos-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 24px;">
                         <div class="sos-icon-container">
                             <span class="sos-pulse"></span>
                             <button class="sos-btn" id="btn-sos-trigger">
-                                <span>SOS</span>
+                                <strong>SOS</strong>
                             </button>
                         </div>
-                        <h3>Jourveterinär & Djursjukhus</h3>
-                        <p class="sos-desc">Om en olycka sker eller om hästen blir akut sjuk under transporten. Klicka på SOS-knappen ovan för att söka efter närmaste godkända akutklinik baserat på din position.</p>
+                        <p class="sos-help-text" style="font-size: 13px; color: var(--text-secondary); text-align: center; margin-top: 8px;">Hitta närmsta jourveterinär utifrån din position.</p>
                     </div>
 
                     <!-- SOS Results -->
