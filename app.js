@@ -189,7 +189,7 @@ function initTabs() {
 function initBottomSheet() {
     const dragHandle = document.getElementById("bottom-sheet-drag");
     const sidebar = document.getElementById("app-sidebar");
-    const header = document.querySelector(".sidebar-header");
+    const header = document.querySelector(".home-header") || document.querySelector(".panel-header");
     const sidebarContent = document.querySelector(".sidebar-content");
 
     if (!sidebar) return;
@@ -238,7 +238,7 @@ function initBottomSheet() {
     if (dragHandle) dragHandle.addEventListener("click", toggleBottomSheet);
     if (header) {
         header.addEventListener("click", (e) => {
-            if (!e.target.closest("button") && !e.target.closest("a") && !e.target.closest("nav")) {
+            if (!e.target.closest("button") && !e.target.closest("a") && !e.target.closest("nav") && !e.target.closest("input")) {
                 toggleBottomSheet();
             }
         });
@@ -249,8 +249,8 @@ function initBottomSheet() {
         const touch = e.touches[0];
         const state = getCurrentState();
         
-        // Determine if we should drag
-        const isHeaderTouch = e.target.closest("#bottom-sheet-drag") || e.target.closest(".sidebar-header") || e.target.closest(".sidebar-tabs") || e.target.closest(".sidebar-footer");
+        // Determine if we should drag — use modern element selectors
+        const isHeaderTouch = e.target.closest("#bottom-sheet-drag") || e.target.closest(".home-header") || e.target.closest(".panel-header");
         const isContentTouch = e.target.closest(".sidebar-content");
 
         if (isHeaderTouch || (isContentTouch && state !== "expanded")) {
@@ -2657,5 +2657,56 @@ function initHomeRoutePlanner() {
             endInput.value = temp;
         });
     }
+
+    // Visa alla sparade rutter från hemskärmen
+    const btnSeeAllRecent = document.getElementById("btn-see-all-recent");
+    if (btnSeeAllRecent) {
+        btnSeeAllRecent.addEventListener("click", () => {
+            switchTab("tab-saved");
+        });
+    }
+
+    // Profilmeny-klick
+    const menuVehicles = document.getElementById("menu-vehicles");
+    if (menuVehicles) {
+        menuVehicles.addEventListener("click", () => {
+            switchTab("tab-calculator");
+        });
+    }
+    const menuNotifications = document.getElementById("menu-notifications");
+    if (menuNotifications) {
+        menuNotifications.addEventListener("click", () => {
+            showToast("Notiser är aktiverade för viktiga trafikstörningar", "🔔");
+        });
+    }
+    const menuSupport = document.getElementById("menu-support");
+    if (menuSupport) {
+        menuSupport.addEventListener("click", () => {
+            alert("EquiNav Support:\nFör frågor eller förslag på nya funktioner, kontakta support@equinav.se");
+        });
+    }
 }
+
+// Global helpers for mockup clicks
+window.loadSavedRoute = function(start, end) {
+    const inputStart = document.getElementById("input-start");
+    const inputEnd = document.getElementById("input-end");
+    if (inputStart && inputEnd) {
+        inputStart.value = start;
+        inputEnd.value = end;
+        switchTab("tab-route");
+        const btnFind = document.getElementById("btn-find-route");
+        if (btnFind) btnFind.click();
+    }
+};
+
+window.navigateClinic = function(name, lat, lon) {
+    const inputEnd = document.getElementById("input-end");
+    if (inputEnd) {
+        inputEnd.value = `${lat}, ${lon}`;
+        switchTab("tab-route");
+        const btnFind = document.getElementById("btn-find-route");
+        if (btnFind) btnFind.click();
+    }
+};
 
