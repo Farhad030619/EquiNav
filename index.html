@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hästtransport-GPS – Säker navigation för ditt ekipage</title>
+    <title>EquiNav – Säker navigation för hästtransport</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,11 +14,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260815_2235">
+    <link rel="stylesheet" href="index.css?v=20260815_2300">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#233a26">
+    <meta name="theme-color" content="#345735">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="EquiNav">
@@ -27,29 +27,40 @@
 <body>
     <div class="app-container">
         
-        <!-- App Sidebar / Bottom Sheet -->
-        <aside class="sidebar state-peek" id="app-sidebar">
-            <!-- Drag handle -->
-            <div class="bottom-sheet-handle" id="bottom-sheet-drag"></div>
+        <!-- Background Map (For live routing and inspection) -->
+        <main class="map-container-wrapper">
+            <div id="map"></div>
+            
+            <!-- Map Toast Warning -->
+            <div id="map-toast" class="map-toast hidden">
+                <span class="toast-icon">📍</span>
+                <span class="toast-message">Klicka på kartan för att välja position</span>
+                <button class="toast-close" id="btn-toast-close">×</button>
+            </div>
+        </main>
 
-            <!-- Tab Contents -->
+        <!-- Main Screen Viewport / Sidebar -->
+        <aside class="sidebar state-expanded" id="app-sidebar">
+            <div class="bottom-sheet-handle" id="bottom-sheet-drag" title="Dra eller klicka för att se kartan"></div>
+
             <div class="sidebar-content">
                 
-                <!-- Tab: Home / Dashboard -->
+                <!-- ========================================== -->
+                <!-- 1. HEMSKÄRM (Equi hemskärm.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel active" id="tab-home">
-                    <!-- Top Status & Logo Header -->
+                    <!-- Top Logo Header -->
                     <div class="home-header">
                         <div class="logo">
                             <div class="logo-box">
-                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4 16c0-4 3-7 7-7h1l1-3h3l1 3h1c2.2 0 4 1.8 4 4v3H4v-3z"></path>
-                                    <circle cx="8" cy="19" r="2"></circle>
-                                    <circle cx="16" cy="19" r="2"></circle>
+                                <!-- Elegant Horse Silhouette Line Icon -->
+                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 7c0-2-1.5-3-3.5-3C13.5 4 11 6 10 9L7 9c-1.5 0-3 1-3 3 0 1.5 1 2.5 2 2.5l2 .5c.5 1.5 1.5 3 3 3.5v2h2v-2c1.5-.5 3-2 3.5-4l2-.5c1-.5 1.5-2 1.5-3.5 0-1-.5-2-1-3.5z"/>
                                 </svg>
                             </div>
                             <h1 class="brand-title">EquiNav</h1>
                         </div>
-                        <button class="notification-btn" id="btn-notifications" title="Aviseringar">
+                        <button class="notification-btn" id="btn-notifications" title="Notiser">
                             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"></path>
                             </svg>
@@ -57,19 +68,20 @@
                         </button>
                     </div>
                     
+                    <!-- Welcome Text -->
                     <div class="home-welcome">
                         <h2>Välkommen!</h2>
                         <p>Säker och optimerad navigation för dig och din häst.</p>
                     </div>
                     
-                    <!-- Planera din rutt Card (Mockup Style) -->
+                    <!-- Planera din rutt Card -->
                     <div class="card route-planning-card">
                         <div class="route-planning-header">
                             <h3 class="route-planning-title">Planera din rutt</h3>
                             <span class="badge-nytt">NYTT</span>
                         </div>
                         
-                        <!-- Start input -->
+                        <!-- Start Input -->
                         <div class="route-input-group">
                             <div class="input-icon-left dot-start">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
@@ -77,7 +89,7 @@
                                 </svg>
                             </div>
                             <input type="text" id="home-input-start" placeholder="Välj startplats" value="Stockholm">
-                            <button class="home-input-action" id="btn-home-gps" title="Hitta min position">
+                            <button class="home-input-action" id="btn-home-gps" title="Hitta min GPS-position">
                                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <circle cx="12" cy="12" r="3"></circle>
@@ -89,7 +101,7 @@
                             </button>
                         </div>
                         
-                        <!-- End input -->
+                        <!-- Destination Input -->
                         <div class="route-input-group">
                             <div class="input-icon-left dot-end">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -98,7 +110,7 @@
                                 </svg>
                             </div>
                             <input type="text" id="home-input-end" placeholder="Välj slutdestination" value="Strömsholm">
-                            <button class="home-input-action" id="btn-home-swap" title="Växla start/mål">
+                            <button class="home-input-action" id="btn-home-swap" title="Växla start och slut">
                                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="17 11 21 7 17 3"></polyline>
                                     <line x1="21" y1="7" x2="9" y2="7"></line>
@@ -108,15 +120,15 @@
                             </button>
                         </div>
                         
-                        <!-- Snabba val -->
+                        <!-- Quick Shortcuts -->
                         <div class="home-shortcuts">
                             <button class="shortcut-pill" data-start="Stockholm" data-end="Strömsholm">Sthlm → Strömsholm</button>
                             <button class="shortcut-pill" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
                         </div>
                         
-                        <!-- Räkna ut din rutt button -->
-                        <button class="btn btn-main-action" id="btn-home-calculate-route">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Main Calculate Button -->
+                        <button class="btn-main-action" id="btn-home-calculate-route">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="6" cy="19" r="3"></circle>
                                 <circle cx="18" cy="5" r="3"></circle>
                                 <path d="M9 19h4a5 5 0 0 0 5-5v-6"></path>
@@ -125,11 +137,11 @@
                         </button>
                     </div>
 
-                    <!-- Service Tiles Grid (4 quick action buttons) -->
+                    <!-- 4 Quick Action Tiles (Rutt, Vikt, Hinder, SOS) -->
                     <div class="service-tiles-grid">
                         <div class="service-tile-item">
                             <button class="service-tile tile-active-green" id="tile-route">
-                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="6" cy="19" r="3"></circle>
                                     <circle cx="18" cy="5" r="3"></circle>
                                     <path d="M9 19h4a5 5 0 0 0 5-5v-6"></path>
@@ -175,7 +187,7 @@
                         </div>
                     </div>
 
-                    <!-- Om oss Banner -->
+                    <!-- Vårt mål med EquiNav Card -->
                     <div class="card dark-about-card">
                         <div class="dark-about-badge">OM OSS</div>
                         <h4 class="dark-about-title">Vårt mål med EquiNav</h4>
@@ -183,7 +195,7 @@
                         <a href="#" class="dark-about-link" id="btn-read-about">Läs mer om oss →</a>
                     </div>
                     
-                    <!-- Recent Routes Section -->
+                    <!-- Senaste rutter Section -->
                     <div class="recent-routes-section">
                         <div class="recent-routes-header">
                             <h3 class="section-title">Senaste rutter</h3>
@@ -210,29 +222,23 @@
                     </div>
                 </div>
 
-                <!-- Tab: Route & Navigation -->
+                <!-- ========================================== -->
+                <!-- 2. RUTT & GPS TAB -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-route">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka till hemskärmen">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Planera rutt</h3>
-                        <div style="width: 36px;"></div>
-                    </div>
-                    
-                    <!-- Loading Overlay inside panel -->
-                    <div id="route-loading-overlay" class="route-loading-overlay hidden">
-                        <div class="spinner-glow"></div>
-                        <h4 id="loading-text">Beräknar säkraste rutt...</h4>
-                        <p class="loading-sub">Analyserar vägkurvatur och Trafikverkets data.</p>
+                        <div style="width: 32px;"></div>
                     </div>
 
-                    <div class="card card-input">
+                    <div class="card">
                         <div class="form-group">
-                            <label for="input-start">Startplats</label>
+                            <label for="input-start">STARTPLATS</label>
                             <div class="route-input-group">
                                 <div class="input-icon-left dot-start">
                                     <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
@@ -250,7 +256,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="input-end">Slutdestination</label>
+                            <label for="input-end">SLUTDESTINATION</label>
                             <div class="route-input-group">
                                 <div class="input-icon-left dot-end">
                                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -267,33 +273,33 @@
                             <button class="shortcut-pill" data-start="Göteborg" data-end="Uddevalla">Gbg → Uddevalla</button>
                         </div>
 
-                        <button id="btn-find-route" class="btn btn-main-action">
+                        <button id="btn-find-route" class="btn-main-action">
                             <span>Beräkna Hästrutt</span>
                         </button>
                     </div>
 
-                    <!-- Route Results -->
+                    <!-- Route Results Card -->
                     <div id="route-results" class="results-container hidden">
                         <div class="card result-card">
                             <div class="result-header">
-                                <span class="badge badge-success">Hästrutt optimerad</span>
+                                <span class="badge-success">Hästrutt optimerad</span>
                                 <h4 id="route-title">Stockholm till Strömsholm</h4>
                             </div>
                             
                             <div class="result-stats">
                                 <div class="stat-box">
                                     <span class="stat-label">Restid med Släp</span>
-                                    <span class="stat-value highlight" id="stat-horse-eta">--:--</span>
+                                    <span class="stat-value highlight" id="stat-horse-eta">2h 45m</span>
                                     <span class="stat-sub">Max 80 km/h + kurvor</span>
                                 </div>
                                 <div class="stat-box">
                                     <span class="stat-label">Bil (Normalt)</span>
-                                    <span class="stat-value" id="stat-car-eta">--:--</span>
+                                    <span class="stat-value" id="stat-car-eta">1h 55m</span>
                                     <span class="stat-sub">Normalhastighet</span>
                                 </div>
                             </div>
 
-                            <!-- Optimization Checkmarks Checklist -->
+                            <!-- Optimization Checklist -->
                             <div class="optimization-checklist">
                                 <div class="opt-badge active">
                                     <span class="opt-icon">🌉</span>
@@ -316,14 +322,13 @@
                                 <div class="detail-item">
                                     <div class="detail-icon">📏</div>
                                     <div class="detail-text">
-                                        <strong>Distans:</strong> <span id="stat-distance">-- km</span>
+                                        <strong>Distans:</strong> <span id="stat-distance">202,4 km</span>
                                     </div>
                                 </div>
                                 <div class="detail-item">
                                     <div class="detail-icon">🔄</div>
                                     <div class="detail-text">
-                                        <strong>Svängar & rondeller:</strong> <span id="stat-turns">-- st</span>
-                                        <div class="help-text">Varje sväng ger +5s rull-tillägg.</div>
+                                        <strong>Svängar & rondeller:</strong> <span id="stat-turns">14 st</span>
                                     </div>
                                 </div>
                                 <div class="detail-item alert-item" id="route-warnings-container">
@@ -331,39 +336,31 @@
                                     <div class="detail-text">
                                         <strong>Säkerhetsvarningar:</strong>
                                         <ul class="warning-list" id="route-warnings">
-                                            <li>Inga varningar</li>
+                                            <li>Inga varningar längs rutten</li>
                                         </ul>
                                     </div>
                                 </div>
                             </div>
-                            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                <button id="btn-start-navigation" class="btn btn-success" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; font-weight: 600; color: white; border-radius: 14px;">
-                                    <span>📡</span> Starta GPS-Navigering
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Navigation Directions -->
-                        <div class="card directions-card">
-                            <h4>Köranvisningar</h4>
-                            <ol class="directions-list" id="directions-list">
-                                <li>Beräkna en rutt för att se anvisningar.</li>
-                            </ol>
+
+                            <button id="btn-start-navigation" class="btn-main-action" style="margin-top: 14px;">
+                                <span>📡 Starta GPS-Navigering</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Weight & License Calculator (Mockup Style) -->
+                <!-- ========================================== -->
+                <!-- 3. VIKTKALKYL TAB (Equi viktkalkyl.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-calculator">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Viktkalkyl</h3>
-                        <div style="width: 36px;"></div>
+                        <div style="width: 32px;"></div>
                     </div>
                     <p class="section-intro">Kontrollera att din dragbil och släpkombination är laglig utifrån ditt körkort.</p>
                     
@@ -382,7 +379,7 @@
                         <div class="form-group">
                             <label for="calc-horse-weight">HÄSTENS VIKT</label>
                             <div class="input-with-unit">
-                                <input type="number" id="calc-horse-weight" placeholder="T.ex. 600" value="600">
+                                <input type="number" id="calc-horse-weight" placeholder="600" value="600">
                                 <span class="unit">kg</span>
                             </div>
                         </div>
@@ -398,7 +395,7 @@
                                             <span>Max 3500kg tågvikt</span>
                                         </div>
                                         <div class="license-check-circle">
-                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <polyline points="9 12 11 14 15 10"></polyline>
                                             </svg>
@@ -414,7 +411,7 @@
                                             <span>Max 4250kg tågvikt</span>
                                         </div>
                                         <div class="license-check-circle">
-                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                                 <circle cx="12" cy="12" r="10"></circle>
                                                 <polyline points="9 12 11 14 15 10"></polyline>
                                             </svg>
@@ -425,85 +422,39 @@
                         </div>
                     </div>
 
-                    <!-- Result Pill Banner -->
+                    <!-- Result Banner Pill -->
                     <div class="calc-result-pill" id="calc-status-banner">
                         <span id="calc-status-text">Kombinationen är laglig för ditt körkort.</span>
                     </div>
                     
-                    <!-- Main calculation button below card -->
-                    <button id="btn-calculate-weights" class="btn btn-dark-action">Kontrollera kombination</button>
+                    <!-- Calculate Button -->
+                    <button id="btn-calculate-weights" class="btn-dark-action">Kontrollera kombination</button>
 
-                    <!-- Calculator Results Details (Expandable) -->
-                    <div id="calculator-results" class="results-container hidden">
-                        <!-- Technical Specs Card -->
-                        <div class="card specs-card">
-                            <h4>Tekniska Specifikationer</h4>
-                            <div class="spec-grid">
-                                <div class="spec-section">
-                                    <h5>Dragbil: <span id="val-car-name">--</span></h5>
-                                    <div class="spec-row"><span>Tjänstevikt:</span> <strong id="val-car-curb">-- kg</strong></div>
-                                    <div class="spec-row"><span>Totalvikt:</span> <strong id="val-car-total">-- kg</strong></div>
-                                    <div class="spec-row"><span>Max släpvikt:</span> <strong id="val-car-max-tow">-- kg</strong></div>
-                                </div>
-                                <div class="spec-section">
-                                    <h5>Släpvagn: <span id="val-trailer-name">--</span></h5>
-                                    <div class="spec-row"><span>Tjänstevikt:</span> <strong id="val-trailer-curb">-- kg</strong></div>
-                                    <div class="spec-row"><span>Totalvikt:</span> <strong id="val-trailer-total">-- kg</strong></div>
-                                    <div class="spec-row"><span>Max lastvikt:</span> <strong id="val-trailer-payload">-- kg</strong></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Calculation details & progress bars -->
-                        <div class="card calculation-details">
-                            <h4>Viktfördelning & Gränser</h4>
-                            <div class="meter-group">
-                                <div class="meter-header">
-                                    <span>Släpets bruttovikt vs Släpets totalvikt</span>
-                                    <span id="meter-trailer-text">-- kg / -- kg</span>
-                                </div>
-                                <div class="meter-bar">
-                                    <div class="meter-fill" id="meter-trailer-fill" style="width: 0%"></div>
-                                </div>
-                                <div class="meter-status" id="meter-trailer-status">--</div>
-                            </div>
-
-                            <div class="meter-group">
-                                <div class="meter-header">
-                                    <span>Faktisk släpvikt vs Bilens max släpvikt</span>
-                                    <span id="meter-car-tow-text">-- kg / -- kg</span>
-                                </div>
-                                <div class="meter-bar">
-                                    <div class="meter-fill" id="meter-car-tow-fill" style="width: 0%"></div>
-                                </div>
-                                <div class="meter-status" id="meter-car-tow-status">--</div>
-                            </div>
-
-                            <div class="meter-group">
-                                <div class="meter-header">
-                                    <span>Total tågvikt vs Körkortsgräns</span>
-                                    <span id="meter-license-text">-- kg / -- kg</span>
-                                </div>
-                                <div class="meter-bar">
-                                    <div class="meter-fill" id="meter-license-fill" style="width: 0%"></div>
-                                </div>
-                                <div class="meter-status" id="meter-license-status">--</div>
+                    <!-- Expandable specs -->
+                    <div id="calculator-results" class="results-container hidden" style="margin-top: 14px;">
+                        <div class="card">
+                            <h4 style="font-size: 15px; margin-bottom: 8px;">Tekniska specifikationer</h4>
+                            <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                                <div>Dragbil tjänstevikt: <strong id="val-car-curb" style="color: var(--text-main);">1650 kg</strong></div>
+                                <div>Släpvagn totalvikt: <strong id="val-trailer-total" style="color: var(--text-main);">1400 kg</strong></div>
+                                <div>Total tågvikt: <strong id="val-train-weight" style="color: var(--primary-green);">3050 kg</strong></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Hazards/Reports (Mockup Style) -->
+                <!-- ========================================== -->
+                <!-- 4. VÄGHINDER TAB (Equi väghinder.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-hazards">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Väghinder</h3>
-                        <div style="width: 36px;"></div>
+                        <div style="width: 32px;"></div>
                     </div>
                     
                     <div class="card">
@@ -512,19 +463,17 @@
                         
                         <div class="form-group">
                             <label for="hazard-type">HINDERTYP</label>
-                            <div class="select-wrapper">
-                                <select id="hazard-type" class="custom-select-pill">
-                                    <option value="pothole">/|\  Gupp / Dålig asfalt</option>
-                                    <option value="narrow">⇄  Trång passage / Mötesproblem</option>
-                                    <option value="noturn">🛑 Ingen vändplats / Återvändsgränd</option>
-                                    <option value="low">🌲 Låga grenar / Lågt hinder</option>
-                                </select>
-                            </div>
+                            <select id="hazard-type" class="custom-select-pill">
+                                <option value="pothole">/|\  Gupp / Dålig asfalt</option>
+                                <option value="narrow">⇄  Trång passage / Mötesproblem</option>
+                                <option value="noturn">🛑 Ingen vändplats / Återvändsgränd</option>
+                                <option value="low">🌲 Låga grenar / Lågt hinder</option>
+                            </select>
                         </div>
                         
                         <div class="form-group">
                             <label for="hazard-comment">BESKRIVNING / KOMMENTAR</label>
-                            <textarea id="hazard-comment" rows="2" placeholder="T.ex. Mycket rullgrus i kurvan..."></textarea>
+                            <input type="text" id="hazard-comment" placeholder="T.ex. Mycket rullgrus i kurvan...">
                         </div>
 
                         <div class="form-group">
@@ -534,10 +483,10 @@
                             </div>
                         </div>
                         
-                        <button id="btn-save-hazard" class="btn btn-dark-action" disabled>Spara hinder på kartan</button>
+                        <button id="btn-save-hazard" class="btn-dark-action">Spara hinder på kartan</button>
                     </div>
 
-                    <!-- List of active hazards (Mockup Style) -->
+                    <!-- Rapporterade hinder list -->
                     <div class="hazards-list-section">
                         <h4 class="section-subtitle">Rapporterade hinder (5 dagar)</h4>
                         <div class="hazard-list" id="hazard-list-container">
@@ -563,34 +512,33 @@
                     </div>
                 </div>
 
-                <!-- Tab: Emergency SOS (Mockup Style) -->
+                <!-- ========================================== -->
+                <!-- 5. AKUT SOS TAB (Equi akut sos.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-emergency">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Akut SOS</h3>
-                        <div style="width: 36px;"></div>
+                        <div style="width: 32px;"></div>
                     </div>
                     
-                    <!-- Red Hero Banner Card -->
-                    <div class="emergency-hero-card" id="btn-sos-trigger">
+                    <!-- Red Hero Banner -->
+                    <div class="emergency-hero-card">
                         <div class="hero-circle-graphic"></div>
                         <h3 class="emergency-hero-title">Jourveterinär & Djursjukhus</h3>
                         <p class="emergency-hero-sub">Hitta närmaste godkända akutklinik baserat på din position.</p>
                     </div>
 
-                    <!-- SOS Results (Mockup Style) -->
-                    <div id="emergency-results" class="results-container">
-                        <div class="results-title-row">
-                            <span class="sub-header-caps">SORTERAT EFTER NÄRHET</span>
-                        </div>
+                    <!-- SOS Results List -->
+                    <div class="results-container">
+                        <span class="sub-header-caps">SORTERAT EFTER NÄRHET</span>
                         
                         <div class="emergency-list" id="emergency-list-container">
-                            <!-- Clinic Card 1 (Active with red border accent) -->
+                            <!-- Clinic 1 -->
                             <div class="clinic-card card-active-border">
                                 <div class="clinic-card-top">
                                     <div>
@@ -600,12 +548,12 @@
                                     <span class="clinic-distance-badge badge-red-soft">34,8 km</span>
                                 </div>
                                 <div class="clinic-actions-row">
-                                    <a href="tel:0859254010" class="btn btn-outline-action">Ring jour</a>
-                                    <button class="btn btn-dark-action btn-compact" onclick="navigateClinic('Mälaren Hästklinik', 59.617, 17.723)">Hitta hit</button>
+                                    <a href="tel:0859254010" class="btn-outline-action">Ring jour</a>
+                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('Mälaren Hästklinik', 59.617, 17.723)">Hitta hit</button>
                                 </div>
                             </div>
 
-                            <!-- Clinic Card 2 -->
+                            <!-- Clinic 2 -->
                             <div class="clinic-card">
                                 <div class="clinic-card-top">
                                     <div>
@@ -614,9 +562,13 @@
                                     </div>
                                     <span class="clinic-distance-badge badge-gray-soft">48,3 km</span>
                                 </div>
+                                <div class="clinic-actions-row">
+                                    <a href="tel:018672680" class="btn-outline-action">Ring jour</a>
+                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('SLU Uppsala', 59.816, 17.658)">Hitta hit</button>
+                                </div>
                             </div>
 
-                            <!-- Clinic Card 3 -->
+                            <!-- Clinic 3 -->
                             <div class="clinic-card">
                                 <div class="clinic-card-top">
                                     <div>
@@ -625,26 +577,30 @@
                                     </div>
                                     <span class="clinic-distance-badge badge-gray-soft">112,0 km</span>
                                 </div>
+                                <div class="clinic-actions-row">
+                                    <a href="tel:022045800" class="btn-outline-action">Ring jour</a>
+                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('Evidensia Strömsholm', 59.525, 16.273)">Hitta hit</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Saved Routes (Mockup Style) -->
+                <!-- ========================================== -->
+                <!-- 6. SPARADE RUTTER TAB (Equi sparade rutter.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-saved">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Sparade rutter</h3>
-                        <div style="width: 36px;"></div>
+                        <div style="width: 32px;"></div>
                     </div>
                     
                     <div class="saved-routes-list">
-                        <!-- Item 1 -->
                         <div class="saved-route-card" onclick="loadSavedRoute('Stockholm', 'Strömsholm')">
                             <div class="saved-map-thumb"></div>
                             <div class="saved-route-info">
@@ -658,7 +614,6 @@
                             </div>
                         </div>
 
-                        <!-- Item 2 -->
                         <div class="saved-route-card" onclick="loadSavedRoute('Göteborg', 'Uddevalla')">
                             <div class="saved-map-thumb"></div>
                             <div class="saved-route-info">
@@ -672,7 +627,6 @@
                             </div>
                         </div>
 
-                        <!-- Item 3 -->
                         <div class="saved-route-card" onclick="loadSavedRoute('Rimbo', 'Kiruna')">
                             <div class="saved-map-thumb"></div>
                             <div class="saved-route-info">
@@ -688,23 +642,24 @@
                     </div>
                 </div>
 
-                <!-- Tab: Profile Settings (Mockup Style) -->
+                <!-- ========================================== -->
+                <!-- 7. MIN PROFIL TAB (Equi profilsida.png) -->
+                <!-- ========================================== -->
                 <div class="tab-panel" id="tab-profile">
                     <div class="panel-header">
-                        <button class="btn-back-to-home">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
+                        <button class="btn-back-to-home" title="Tillbaka">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
                         </button>
                         <h3>Min profil</h3>
-                        <div style="width: 36px;"></div>
+                        <div style="width: 32px;"></div>
                     </div>
                     
                     <!-- User Card -->
                     <div class="card profile-user-card">
                         <div class="profile-avatar-circle">
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                 <circle cx="12" cy="7" r="4"></circle>
                             </svg>
@@ -715,20 +670,18 @@
                         </div>
                     </div>
                     
-                    <!-- License Select Card -->
+                    <!-- License Class Select Card -->
                     <div class="card profile-setting-card">
                         <label for="profile-license-type" class="label-caps">KÖRKORTSKLASS</label>
-                        <div class="select-wrapper">
-                            <select id="profile-license-type" class="custom-select-pill">
-                                <option value="B">B-Körkort (Max 3500kg)</option>
-                                <option value="B-extended" selected>Utökad B (B96) — Max 4250kg</option>
-                                <option value="BE">BE-Körkort (Max 7000kg)</option>
-                            </select>
-                        </div>
+                        <select id="profile-license-type" class="custom-select-pill">
+                            <option value="B">B-Körkort (Max 3500kg)</option>
+                            <option value="B-extended" selected>Utökad B (B96) — Max 4250kg</option>
+                            <option value="BE">BE-Körkort (Max 7000kg)</option>
+                        </select>
                         <p class="profile-help-note">Profilinställningar lagras lokalt för framtida ruttberäkningar och viktkalkyler.</p>
                     </div>
 
-                    <!-- Navigation Menu Items Group -->
+                    <!-- Navigation Rows -->
                     <div class="card profile-menu-card">
                         <div class="menu-list-row" id="menu-vehicles">
                             <div class="menu-left">
@@ -772,7 +725,7 @@
                         </div>
                     </div>
 
-                    <!-- Profile Footer -->
+                    <!-- App Footer -->
                     <div class="profile-app-footer">
                         <span>EquiNav MVP v1.0.0 · <a href="#" id="btn-reset-app">Nollställ data</a></span>
                     </div>
@@ -781,7 +734,9 @@
             </div>
         </aside>
 
-        <!-- Bottom Tab Navigation Bar (fixed outside sidebar) -->
+        <!-- ========================================== -->
+        <!-- FIXED BOTTOM NAVIGATION BAR (Hem, Sparat, Profil) -->
+        <!-- ========================================== -->
         <nav class="bottom-nav">
             <button class="tab-btn active" data-tab="tab-home">
                 <span class="nav-icon">
@@ -813,169 +768,70 @@
             </button>
         </nav>
 
-        <!-- Floating Map Controls Overlay (UX Upgrade) -->
-        <div class="map-controls">
-            <button class="map-ctrl-btn" id="ctrl-gps" title="Hitta mig">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                    <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-                </svg>
-            </button>
-            <button class="map-ctrl-btn" id="ctrl-clear" title="Rensa karta">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Map Container -->
-        <main class="map-container-wrapper">
-            <div id="map"></div>
-            
-
-            
-            <!-- Map Toast Warning -->
-            <div id="map-toast" class="map-toast hidden">
-                <span class="toast-icon">📍</span>
-                <span class="toast-message">Klicka på kartan för att välja start/slut eller placera hinder</span>
-                <button class="toast-close" id="btn-toast-close">×</button>
-            </div>
-        </main>
-        
-        <!-- Google Maps-like Navigation HUD Overlay -->
+        <!-- ========================================== -->
+        <!-- LIVE NAVIGATION HUD OVERLAY (Equi live-navigering.png) -->
+        <!-- ========================================== -->
         <div id="navigation-hud" class="navigation-hud hidden">
-            <!-- Top Green Banner: Current Turn Instruction -->
-            <div class="nav-top-banner" id="nav-top-banner-btn" style="cursor: pointer;" title="Visa kommande svängar">
-                <div class="nav-turn-icon" id="nav-instruction-icon">⬆️</div>
-                <div class="nav-instruction-details">
-                    <span class="nav-next-step" id="nav-next-text">Fortsätt rakt fram</span>
-                    <span class="nav-next-dist" id="nav-next-dist">om 500 m</span>
-                </div>
-                <!-- Expansion arrow indicator -->
-                <div class="nav-expand-indicator" id="nav-expand-arrow">▼</div>
-            </div>
-
-            <!-- Secondary Banner: Next Step Preview -->
-            <div class="nav-sub-banner hidden" id="nav-sub-banner">
-                <div class="nav-sub-icon" id="nav-sub-icon">➡️</div>
-                <div class="nav-sub-details">
-                    <span>Sedan </span><strong id="nav-sub-text">Sveavägen</strong>
-                </div>
-            </div>
-
-            <!-- Expanded Directions Panel -->
-            <div class="nav-directions-panel hidden" id="nav-directions-panel">
-                <h4>Kommande köranvisningar</h4>
-                <ul class="nav-directions-list" id="nav-directions-list-expanded">
-                    <!-- Dynamic directions list -->
-                </ul>
-            </div>
-
-            <!-- Right-side Floating Action Buttons -->
-            <div class="nav-floating-actions">
-                <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder live på din position">
-                    <span>🚧</span>
-                </button>
-                <button class="nav-action-btn btn-danger" id="btn-nav-sos" title="Hitta akut hästklinik nära dig">
-                    <span>🚨</span>
-                </button>
-            </div>
-
-            <!-- Quick SOS Clinic Info Card (Floating Overlay above bottom stats card) -->
-            <div id="quick-sos-card" class="quick-sos-card hidden">
-                <button class="quick-card-close" id="btn-quick-sos-close">×</button>
-                <div class="quick-sos-header">
-                    <h5>🚨 Närmaste Djursjukhus</h5>
-                    <span class="quick-sos-dist" id="quick-sos-dist">-- km</span>
-                </div>
-                <h4 id="quick-sos-name">Kliniknamn</h4>
-                <p id="quick-sos-address">Adress...</p>
-                <div class="quick-sos-details">
-                    <div>📞 <strong>Jour:</strong> <span id="quick-sos-tel">--</span></div>
-                    <div>🔄 <strong>Vändyta:</strong> <span id="quick-sos-turnspace">--</span></div>
-                </div>
-                <div class="quick-sos-btns">
-                    <a href="#" id="btn-quick-sos-call" class="btn btn-primary btn-sm btn-sos-call-hud">Ring jour</a>
-                    <button id="btn-quick-sos-show" class="btn btn-secondary btn-sm">Visa på karta</button>
-                </div>
-            </div>
-
-            <!-- GPS Permission Error Modal Overlay -->
-            <div id="gps-error-modal" class="quick-hazard-modal hidden">
-                <div class="quick-hazard-content" style="text-align: center;">
-                    <button class="quick-card-close" id="btn-gps-error-close">×</button>
-                    <span style="font-size: 48px; display: block; margin-bottom: 10px;">📡</span>
-                    <h3 style="margin-bottom: 8px;">GPS-behörighet saknas</h3>
-                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 15px;" id="gps-error-text">
-                        För att kunna navigera live i realtid behöver EquiNav åtkomst till din enhets GPS. Vänligen tillåt platstjänster i din webbläsare.
-                    </p>
-                    <div style="background-color: var(--background-secondary); border-radius: 8px; padding: 12px; font-size: 12px; text-align: left; line-height: 1.4; margin-bottom: 15px; color: var(--text-main);">
-                        <strong>Hur man aktiverar på iPhone (Safari):</strong><br>
-                        Gå till Inställningar ➔ Integritet & Säkerhet ➔ Platstjänster ➔ Safari Webbplatser ➔ Välj "När appen används".
+            <!-- Top Dark Green Turn-by-Turn Banner -->
+            <div>
+                <div class="nav-top-banner">
+                    <div class="nav-turn-icon">
+                        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+                            <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+                        </svg>
                     </div>
-                    <button class="btn btn-primary" id="btn-gps-error-ok" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: 600;">Jag förstår</button>
-                </div>
-            </div>
-
-            <!-- Quick Hazard Report Modal Overlay -->
-            <div id="quick-hazard-modal" class="quick-hazard-modal hidden">
-                <div class="quick-hazard-content">
-                    <button class="quick-card-close" id="btn-quick-hazard-close">×</button>
-                    <h3>🚧 Rapportera Hinder Live</h3>
-                    <p class="help-text">Rapporterar ett hinder på din nuvarande GPS-position så att andra varnas.</p>
-                    
-                    <div class="form-group">
-                        <label for="quick-hazard-type">Hindertyp</label>
-                        <select id="quick-hazard-type">
-                            <option value="pothole">🕳️ Gupp / Dålig asfalt</option>
-                            <option value="narrow">🚧 Trång passage / Mötesproblem</option>
-                            <option value="noturn">🛑 Ingen vändplats / Återvändsgränd</option>
-                            <option value="low">🌲 Låga grenar / Lågt hinder</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top: 10px;">
-                        <label for="quick-hazard-comment">Kommentar</label>
-                        <textarea id="quick-hazard-comment" rows="2" placeholder="T.ex. Mycket rullgrus i svängen..."></textarea>
-                    </div>
-
-                    <div class="quick-hazard-position-indicator" style="margin: 10px 0; font-size: 11px; color: var(--text-secondary);">
-                        📍 Position: <span id="quick-hazard-pos-text" style="font-weight: bold; color: var(--accent-color);">Hämtar GPS...</span>
-                    </div>
-
-                    <button id="btn-quick-hazard-save" class="btn btn-primary">Spara hinder på din position</button>
-                </div>
-            </div>
-
-            <!-- Bottom white card: Stats & End Navigation Button -->
-            <div class="nav-bottom-card">
-                <div class="nav-stats">
-                    <div class="nav-stat-time" id="nav-time-remaining">1h 45m</div>
-                    <div class="nav-stat-sub">
-                        <span id="nav-dist-remaining">120 km</span>
-                        <span class="dot">•</span>
-                        <span id="nav-eta">Ankomst 22:15</span>
+                    <div class="nav-instruction-details">
+                        <span class="nav-next-dist" id="nav-next-dist">150 m</span>
+                        <span class="nav-next-step" id="nav-next-text">Sväng vänster in på Vibyvägen</span>
                     </div>
                 </div>
-                <button id="btn-end-navigation" class="btn-end-nav" title="Avsluta navigering">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
+
+                <div class="nav-sub-banner" id="nav-sub-banner">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/>
                     </svg>
+                    <span>Sedan Rimbo Skolväg</span>
+                </div>
+            </div>
+
+            <!-- Right Floating Actions -->
+            <div class="nav-floating-actions">
+                <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder">
+                    <span>⚠️</span>
                 </button>
+                <button class="nav-action-btn" id="btn-nav-voice" title="Röstguidning">
+                    <span>🔊</span>
+                </button>
+            </div>
+
+            <!-- Speed Limit & Current Speed Overlay -->
+            <div class="nav-speed-overlay">
+                <div class="nav-speed-limit-circle">80</div>
+                <div class="nav-current-speed-pill">74 km/h</div>
+            </div>
+
+            <!-- Bottom Floating Card -->
+            <div class="nav-bottom-card">
+                <div class="nav-bottom-handle"></div>
+                <div class="nav-bottom-info">
+                    <div class="nav-time-large" id="nav-time-remaining">2h 45m</div>
+                    <div class="nav-sub-info">
+                        <span id="nav-dist-remaining">202,4 km</span> · <span id="nav-eta">Ankomst 21:25</span>
+                    </div>
+                </div>
+                <button id="btn-end-navigation" class="btn-end-navigation-red">Avsluta rutt</button>
             </div>
         </div>
+
     </div>
 
-    <!-- Supabase JS Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <!-- App Database layer -->
-    <script src="db.js?v=20260815_2235"></script>
+    <script src="db.js?v=20260815_2300"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260815_2235"></script>
+    <script src="app.js?v=20260815_2300"></script>
 </body>
 </html>
