@@ -40,20 +40,38 @@ let currentRouteData = {
 window.addEventListener("DOMContentLoaded", () => {
     // Registrera Service Worker för offline-PWA
     if ("serviceWorker" in navigator) {
+        // Tvinga omedelbar uppdatering av SW
         navigator.serviceWorker.register("./sw.js").then((reg) => {
             console.log("Service Worker aktiv:", reg.scope);
+            // Tvinga uppdatering varje sidladdning
             reg.update();
+            // Om en ny SW väntar, aktivera den omedelbart
+            if (reg.waiting) {
+                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            reg.addEventListener('updatefound', () => {
+                const newSw = reg.installing;
+                if (newSw) {
+                    newSw.addEventListener('statechange', () => {
+                        if (newSw.state === 'activated') {
+                            console.log("Ny Service Worker aktiverad – laddar om sidan");
+                            window.location.reload();
+                        }
+                    });
+                }
+            });
         }).catch((err) => {
             console.warn("Service Worker registrering misslyckades:", err);
         });
     }
 
-    // Rensa gamla Carto-cacher om de finns kvar i webbläsaren
+    // Aggressiv rensning: radera ALLA gamla cacher (inklusive Carto-tiles)
     if (typeof caches !== "undefined") {
         caches.keys().then(keys => {
             keys.forEach(k => {
-                if (k.includes('v18') || k.includes('v19') || k.includes('v20')) {
-                    console.log("Rensar gammal tile-cache:", k);
+                // Radera allt utom den allra senaste SW-cachen
+                if (k !== 'equinav-v23-osm-only' && k !== 'equinav-routes-v1') {
+                    console.log("Raderar gammal cache:", k);
                     caches.delete(k);
                 }
             });
@@ -399,18 +417,33 @@ function initRoutePlanner() {
     }
 }
 
-function getCoordsForPlace(name) {
+function isGpsPlaceName(name) {
+    if (!name) return false;
+    const key = name.toLowerCase().trim();
+    return key.includes("min plats") || key.includes("min position") || key.includes("gps") ||
+           key === "här" || key === "hemma" || key === "nuvarande" || key.includes("current");
+}
+
+function getCoordsForPlace(name, inputEl) {
     if (!name) return currentUserGpsCoords || [59.3293, 18.0686];
     const key = name.toLowerCase().trim();
 
-    // Om användaren valt sin egen GPS-position
-    if (key.includes("min position") || key.includes("gps")) {
+    // Om texten matchar GPS-relaterade uttryck
+    if (isGpsPlaceName(name)) {
+        // Kontrollera dataset lat/lng på inputfältet först
+        if (inputEl && inputEl.dataset.lat && inputEl.dataset.lng) {
+            return [parseFloat(inputEl.dataset.lat), parseFloat(inputEl.dataset.lng)];
+        }
+        // Annars använd sparade GPS-koordinater
         if (currentUserGpsCoords) {
             return currentUserGpsCoords;
         }
-        const startIn = document.getElementById("input-start") || document.getElementById("home-input-start");
-        if (startIn && startIn.dataset.lat && startIn.dataset.lng) {
-            return [parseFloat(startIn.dataset.lat), parseFloat(startIn.dataset.lng)];
+        // Sista försök: kolla alla startfält
+        for (const id of ["home-input-start", "input-start"]) {
+            const el = document.getElementById(id);
+            if (el && el.dataset.lat && el.dataset.lng) {
+                return [parseFloat(el.dataset.lat), parseFloat(el.dataset.lng)];
+            }
         }
     }
 
@@ -428,12 +461,36 @@ function getCoordsForPlace(name) {
     return [59.3293, 18.0686];
 }
 
+// Promise-wrapper för GPS
+function getGpsPositionAsync() {
+    return new Promise((resolve) => {
+        getUserGpsPosition((coords) => {
+            resolve(coords);
+        });
+    });
+}
+
 async function calculateAndShowRoute(startPlace, endPlace) {
     switchTab("tab-route");
     showToast("Beräknar säkraste rutt för hästtransport...", "🐎");
 
-    const startCoords = getCoordsForPlace(startPlace);
-    const endCoords = getCoordsForPlace(endPlace);
+    // Om startplatsen är en GPS-text men vi saknar koordinater → hämta GPS först
+    if (isGpsPlaceName(startPlace) && !currentUserGpsCoords) {
+        showToast("Hämtar din GPS-position...", "📍");
+        const coords = await getGpsPositionAsync();
+        currentUserGpsCoords = coords;
+        // Uppdatera inputfälten med GPS-koordinaterna
+        const homeStart = document.getElementById("home-input-start");
+        const routeStart = document.getElementById("input-start");
+        if (homeStart) { homeStart.dataset.lat = coords[0]; homeStart.dataset.lng = coords[1]; }
+        if (routeStart) { routeStart.dataset.lat = coords[0]; routeStart.dataset.lng = coords[1]; }
+    }
+
+    const startInputEl = document.getElementById("home-input-start") || document.getElementById("input-start");
+    const endInputEl = document.getElementById("home-input-end") || document.getElementById("input-end");
+
+    const startCoords = getCoordsForPlace(startPlace, startInputEl);
+    const endCoords = getCoordsForPlace(endPlace, endInputEl);
 
     // Rita markörer på kartan
     if (startMarker) map.removeLayer(startMarker);

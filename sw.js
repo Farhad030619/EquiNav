@@ -1,4 +1,4 @@
-const CACHE_NAME = 'equinav-cache-v22-clean-osm';
+const CACHE_NAME = 'equinav-v23-osm-only';
 const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
@@ -39,6 +39,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (event.data && event.data.type === 'CACHE_ROUTE') {
     caches.open(ROUTE_CACHE).then((cache) => {
       // Create a synthetic response
@@ -55,6 +59,14 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   
   if (requestUrl.host.includes('supabase.co')) {
+    return;
+  }
+
+  // BLOCKERA alla gamla Carto-tiles – returnera tom PNG istället
+  if (requestUrl.host.includes('basemaps.cartocdn.com') || requestUrl.host.includes('cartocdn.com')) {
+    event.respondWith(
+      new Response('', { status: 204, statusText: 'Blocked legacy Carto tile' })
+    );
     return;
   }
 
