@@ -1642,6 +1642,22 @@ html, body {
     color: #e8ece9;
 }
 
+[data-theme="dark"] .license-choice-card input[type="radio"]:checked + .license-card-box {
+    border-color: var(--primary-green);
+    background-color: rgba(74, 138, 77, 0.2);
+}
+
+[data-theme="dark"] .btn-load-preset-pill {
+    background-color: rgba(74, 138, 77, 0.15);
+    color: #6eb771;
+    border-color: #6eb771;
+}
+
+[data-theme="dark"] .zero-speed-ad-inner {
+    background: rgba(26, 34, 28, 0.95);
+    border-color: #2a352c;
+}
+
 /* Night mode toggle button styling */
 .night-mode-toggle {
     display: flex;

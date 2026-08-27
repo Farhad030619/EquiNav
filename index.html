@@ -411,7 +411,7 @@
                                     <div class="license-card-box">
                                         <div class="license-card-info">
                                             <strong>B-kort</strong>
-                                            <span>Max 3500kg tågvikt</span>
+                                            <span>Max 3500kg</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -427,7 +427,23 @@
                                     <div class="license-card-box">
                                         <div class="license-card-info">
                                             <strong>B96 (utökad)</strong>
-                                            <span>Max 4250kg tågvikt</span>
+                                            <span>Max 4250kg</span>
+                                        </div>
+                                        <div class="license-check-circle">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="9 12 11 14 15 10"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="license-choice-card">
+                                    <input type="radio" name="license-type" value="BE">
+                                    <div class="license-card-box">
+                                        <div class="license-card-info">
+                                            <strong>BE-kort</strong>
+                                            <span>Max 7000kg</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -557,50 +573,7 @@
                         <span class="sub-header-caps">SORTERAT EFTER NÄRHET</span>
                         
                         <div class="emergency-list" id="emergency-list-container">
-                            <!-- Clinic 1 -->
-                            <div class="clinic-card card-active-border">
-                                <div class="clinic-card-top">
-                                    <div>
-                                        <h4 class="clinic-name">Mälaren Hästklinik</h4>
-                                        <p class="clinic-address">Hargs Gård, Sigtuna</p>
-                                    </div>
-                                    <span class="clinic-distance-badge badge-red-soft">34,8 km</span>
-                                </div>
-                                <div class="clinic-actions-row">
-                                    <a href="tel:0859254010" class="btn-outline-action">Ring jour</a>
-                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('Mälaren Hästklinik', 59.617, 17.723)">Hitta hit</button>
-                                </div>
-                            </div>
-
-                            <!-- Clinic 2 -->
-                            <div class="clinic-card">
-                                <div class="clinic-card-top">
-                                    <div>
-                                        <h4 class="clinic-name">Universitetsdjursjukhuset SLU</h4>
-                                        <p class="clinic-address">Ulls väg 29, Uppsala</p>
-                                    </div>
-                                    <span class="clinic-distance-badge badge-gray-soft">48,3 km</span>
-                                </div>
-                                <div class="clinic-actions-row">
-                                    <a href="tel:018672680" class="btn-outline-action">Ring jour</a>
-                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('SLU Uppsala', 59.816, 17.658)">Hitta hit</button>
-                                </div>
-                            </div>
-
-                            <!-- Clinic 3 -->
-                            <div class="clinic-card">
-                                <div class="clinic-card-top">
-                                    <div>
-                                        <h4 class="clinic-name">Evidensia Hästsjukhuset Strömsholm</h4>
-                                        <p class="clinic-address">Djurströmsvägen, Strömsholm</p>
-                                    </div>
-                                    <span class="clinic-distance-badge badge-gray-soft">112,0 km</span>
-                                </div>
-                                <div class="clinic-actions-row">
-                                    <a href="tel:022045800" class="btn-outline-action">Ring jour</a>
-                                    <button class="btn-dark-action btn-compact" onclick="navigateClinic('Evidensia Strömsholm', 59.525, 16.273)">Hitta hit</button>
-                                </div>
-                            </div>
+                            <!-- Clinic cards dynamically rendered -->
                         </div>
                     </div>
                 </div>
@@ -628,7 +601,7 @@
                             </div>
                             <div class="saved-route-arrow">
                                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                <polyline points="9 18 15 12 9 6"></polyline>
                                 </svg>
                             </div>
                         </div>
@@ -685,7 +658,7 @@
                         </div>
                         <div>
                             <h4 class="profile-name">Gästinloggning</h4>
-                            <span class="profile-sub">Körkortsklass: B / utökad B</span>
+                            <span class="profile-sub" id="profile-license-display">Körkortsklass: B96 (Utökad)</span>
                         </div>
                     </div>
                     
@@ -694,7 +667,7 @@
                         <label for="profile-license-type" class="label-caps">KÖRKORTSKLASS</label>
                         <select id="profile-license-type" class="custom-select-pill">
                             <option value="B">B-Körkort (Max 3500kg)</option>
-                            <option value="B-extended" selected>Utökad B (B96) — Max 4250kg</option>
+                            <option value="B96" selected>Utökad B (B96) — Max 4250kg</option>
                             <option value="BE">BE-Körkort (Max 7000kg)</option>
                         </select>
                         <p class="profile-help-note">Profilinställningar lagras lokalt för framtida ruttberäkningar och viktkalkyler.</p>
@@ -749,15 +722,15 @@
                             </div>
                             <button class="toggle-switch" id="night-mode-switch" aria-label="Växla nattläge"></button>
                         </div>
-                        <a href="#" class="profile-menu-item">
-                            <div class="menu-item-left">
+                        <div class="menu-list-row" id="menu-vehicles" style="cursor: pointer;">
+                            <div class="menu-left">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="1" y="3" width="15" height="13"></rect>
-                                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                                    <polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
                                     <circle cx="5.5" cy="18.5" r="2.5"></circle>
                                     <circle cx="18.5" cy="18.5" r="2.5"></circle>
                                 </svg>
-                                <span>Mina fordon</span>
+                                <span>Mina fordon & Viktkalkyl</span>
                             </div>
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -769,7 +742,7 @@
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"></path>
                                 </svg>
-                                <span>Notiser</span>
+                                <span>Notiser & Trafikvarningar</span>
                             </div>
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 18 15 12 9 6"></polyline>

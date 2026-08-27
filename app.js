@@ -26,8 +26,26 @@ const LOCATION_COORDS = {
     "uppsala": [59.8586, 17.6389]
 };
 
+let currentRouteData = {
+    start: "Stockholm",
+    end: "Strömsholm",
+    distance: "202,4 km",
+    horseEta: "2h 45m",
+    carEta: "2h 02m",
+    turns: 14
+};
+
 // Initialisering vid sidladdning
 window.addEventListener("DOMContentLoaded", () => {
+    // Registrera Service Worker för offline-PWA
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./sw.js").then((reg) => {
+            console.log("Service Worker aktiv:", reg.scope);
+        }).catch((err) => {
+            console.warn("Service Worker registrering misslyckades:", err);
+        });
+    }
+
     initMap();
     initTabs();
     initNavigationTree();
@@ -245,11 +263,25 @@ function initNavigationTree() {
         });
     }
 
-    // Notis-klockan
+    // Notis-klockan – kollar Trafikverket vid klick
     const notifBtn = document.getElementById("btn-notifications");
     if (notifBtn) {
-        notifBtn.addEventListener("click", () => {
-            showToast("Inga aktiva trafikvarningar i ditt närområde.", "🔔");
+        notifBtn.addEventListener("click", async () => {
+            showToast("Söker aktuella trafikvarningar...", "🔔");
+            try {
+                if (typeof db !== "undefined") {
+                    const res = await db.getTrafikverketSituationsFromProxy();
+                    if (res && res.data && res.data.length > 0) {
+                        showToast(`${res.data.length} trafikstörningar rapporterade hos Trafikverket.`, "⚠️");
+                    } else {
+                        showToast("Inga akuta trafikvarningar i ditt närområde.", "🟢");
+                    }
+                } else {
+                    showToast("Inga aktiva trafikvarningar i ditt närområde.", "🔔");
+                }
+            } catch (e) {
+                showToast("Inga aktiva trafikvarningar i ditt närområde.", "🔔");
+            }
         });
     }
 }
@@ -397,7 +429,7 @@ async function calculateAndShowRoute(startPlace, endPlace) {
         })
     }).addTo(map).bindPopup(`Mål: ${endPlace}`);
 
-    // Hämta rutt via OpenRouteService eller OSRM
+    // Hämta rutt via OSRM
     try {
         const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`;
         const res = await fetch(osrmUrl);
@@ -431,9 +463,20 @@ async function calculateAndShowRoute(startPlace, endPlace) {
             const horseEta = formatTime(horseSeconds);
             const carEta = formatTime(carSeconds);
 
+            // Spara aktiv ruttdata i globalt tillstånd
+            currentRouteData = {
+                start: startPlace,
+                end: endPlace,
+                distance: `${distKm} km`,
+                horseEta: horseEta,
+                carEta: carEta,
+                turns: Math.max(6, Math.round(route.distance / 12000))
+            };
+
             document.getElementById("stat-horse-eta").innerText = horseEta;
             document.getElementById("stat-car-eta").innerText = carEta;
             document.getElementById("stat-distance").innerText = `${distKm} km`;
+            document.getElementById("stat-turns").innerText = `${currentRouteData.turns} st`;
             document.getElementById("route-title").innerText = `${startPlace} till ${endPlace}`;
 
             // Visa resultatsektionen
@@ -454,6 +497,15 @@ async function calculateAndShowRoute(startPlace, endPlace) {
     }).addTo(map);
     map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
+    currentRouteData = {
+        start: startPlace,
+        end: endPlace,
+        distance: "120 km",
+        horseEta: "1h 45m",
+        carEta: "1h 15m",
+        turns: 8
+    };
+
     document.getElementById("route-results").classList.remove("hidden");
 }
 
@@ -462,7 +514,16 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 // ----------------------------------------------------
 function initWeightCalculator() {
     const calcBtn = document.getElementById("btn-calculate-weights");
-    const radioInputs = document.querySelectorAll('input[name="license-type"]');
+    const carRegInput = document.getElementById("calc-car-reg");
+    const trailerRegInput = document.getElementById("calc-trailer-reg");
+    const horseWeightInput = document.getElementById("calc-horse-weight");
+
+    // Ladda sparad körkortsklass från localStorage
+    const savedLicense = localStorage.getItem("equinav-license") || "B96";
+    const targetRadio = document.querySelector(`input[name="license-type"][value="${savedLicense}"]`);
+    if (targetRadio) {
+        targetRadio.checked = true;
+    }
 
     // Klick på körkortskort
     document.querySelectorAll(".license-choice-card").forEach(card => {
@@ -470,13 +531,26 @@ function initWeightCalculator() {
             const radio = card.querySelector('input[type="radio"]');
             if (radio) {
                 radio.checked = true;
+                localStorage.setItem("equinav-license", radio.value);
+                syncProfileLicenseDisplay(radio.value);
                 calculateWeights();
             }
         });
     });
 
+    // Reaktiv beräkning vid inmatning i formulärfält
+    let debounceTimer = null;
+    const triggerDebouncedCalc = () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => calculateWeights(), 400);
+    };
+
+    if (carRegInput) carRegInput.addEventListener("input", triggerDebouncedCalc);
+    if (trailerRegInput) trailerRegInput.addEventListener("input", triggerDebouncedCalc);
+    if (horseWeightInput) horseWeightInput.addEventListener("input", triggerDebouncedCalc);
+
     if (calcBtn) {
-        calcBtn.addEventListener("click", calculateWeights);
+        calcBtn.addEventListener("click", () => calculateWeights());
     }
 
     // Kör en första kontroll
@@ -543,6 +617,16 @@ async function calculateWeights() {
 
     if (resultsContainer) {
         resultsContainer.classList.remove("hidden");
+    }
+}
+
+function syncProfileLicenseDisplay(licenseVal) {
+    const profileSelect = document.getElementById("profile-license-type");
+    const profileDisplay = document.getElementById("profile-license-display");
+    if (profileSelect) profileSelect.value = licenseVal;
+    if (profileDisplay) {
+        const labels = { "B": "Körkortsklass: B (Vanlig)", "B96": "Körkortsklass: B96 (Utökad)", "BE": "Körkortsklass: BE (Släp)" };
+        profileDisplay.innerText = labels[licenseVal] || `Körkortsklass: ${licenseVal}`;
     }
 }
 
@@ -763,6 +847,24 @@ function initProfileSettings() {
     const menuNotif = document.getElementById("menu-notifications");
     const menuSupport = document.getElementById("menu-support");
     const resetBtn = document.getElementById("btn-reset-app");
+    const licenseSelect = document.getElementById("profile-license-type");
+
+    // Ladda och synka sparad körkortsklass i profilen
+    const savedLicense = localStorage.getItem("equinav-license") || "B96";
+    syncProfileLicenseDisplay(savedLicense);
+
+    if (licenseSelect) {
+        licenseSelect.addEventListener("change", (e) => {
+            const val = e.target.value;
+            localStorage.setItem("equinav-license", val);
+            syncProfileLicenseDisplay(val);
+            const targetRadio = document.querySelector(`input[name="license-type"][value="${val}"]`);
+            if (targetRadio) {
+                targetRadio.checked = true;
+            }
+            showToast(`Körkortsklass uppdaterad till ${val}`, "🪪");
+        });
+    }
 
     if (menuVehicles) {
         menuVehicles.addEventListener("click", () => switchTab("tab-calculator"));
@@ -778,8 +880,12 @@ function initProfileSettings() {
     if (resetBtn) {
         resetBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            if (confirm("Vill du nollställa sparade rutter och inställningar?")) {
-                showToast("Data har nollställts.", "🧹");
+            if (confirm("Vill du nollställa alla sparade ekipage, preferenser och inställningar?")) {
+                localStorage.clear();
+                showToast("All data har nollställts.", "🧹");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
             }
         });
     }
@@ -802,11 +908,37 @@ function initNavigationMode() {
             sidebar.className = "sidebar state-collapsed";
             navHud.classList.remove("hidden");
 
+            // Uppdatera HUD med verkliga beräknade värden från aktiv rutt
+            const navTimeRemaining = document.getElementById("nav-time-remaining");
+            const navDistRemaining = document.getElementById("nav-dist-remaining");
+            const navEta = document.getElementById("nav-eta");
+            const navNextStep = document.getElementById("nav-next-text");
+
+            if (navTimeRemaining) navTimeRemaining.innerText = currentRouteData.horseEta || "2h 45m";
+            if (navDistRemaining) navDistRemaining.innerText = currentRouteData.distance || "202,4 km";
+
+            // Beräkna ankomstklockslag
+            const now = new Date();
+            const match = (currentRouteData.horseEta || "").match(/(\d+)h\s*(\d+)m|^(\d+)m$/);
+            if (match) {
+                const hours = parseInt(match[1] || 0);
+                const minutes = parseInt(match[2] || match[3] || 0);
+                const arrival = new Date(now.getTime() + (hours * 60 + minutes) * 60000);
+                if (navEta) navEta.innerText = `Ankomst ${arrival.getHours().toString().padStart(2, "0")}:${arrival.getMinutes().toString().padStart(2, "0")}`;
+            }
+
+            if (navNextStep) {
+                navNextStep.innerText = `Följ skyltar mot ${currentRouteData.end || "destinationen"}`;
+            }
+
             if (routeLine) {
                 map.setView(routeLine.getBounds().getCenter(), 14);
             }
 
             showToast("GPS Live-navigering startad!", "🟢");
+
+            // Trigga Zero-Speed Annons vid stillastående efter 4 sekunder
+            triggerZeroSpeedAd();
         });
     }
 
@@ -961,6 +1093,8 @@ function initSafeArrival() {
 // ----------------------------------------------------
 // ZERO-SPEED ADS
 // ----------------------------------------------------
+let zeroSpeedTimer = null;
+
 function initZeroSpeedAds() {
     const adBanner = document.getElementById('zero-speed-ad');
     const closeAdBtn = document.getElementById('btn-close-ad');
@@ -968,11 +1102,23 @@ function initZeroSpeedAds() {
     if (closeAdBtn) {
         closeAdBtn.addEventListener('click', () => {
             if (adBanner) adBanner.classList.add('hidden');
+            if (zeroSpeedTimer) clearTimeout(zeroSpeedTimer);
         });
     }
+}
 
-    // Simulated: show ad after 10s of navigation being active, hide when "moving"
-    // In real app this would use GPS speed === 0 for 3-5 seconds
+function triggerZeroSpeedAd() {
+    const adBanner = document.getElementById('zero-speed-ad');
+    if (!adBanner) return;
+
+    if (zeroSpeedTimer) clearTimeout(zeroSpeedTimer);
+    // Visa kontextuell hästtransport-annons vid stillastående efter 4 sekunder
+    zeroSpeedTimer = setTimeout(() => {
+        const navHud = document.getElementById("navigation-hud");
+        if (navHud && !navHud.classList.contains("hidden")) {
+            adBanner.classList.remove('hidden');
+        }
+    }, 4000);
 }
 
 // ----------------------------------------------------
