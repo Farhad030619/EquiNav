@@ -365,15 +365,43 @@
                     <p class="section-intro">Kontrollera att din dragbil och släpkombination är laglig utifrån ditt körkort.</p>
                     
                     <div class="card">
-                        <div class="form-row">
-                            <div class="form-group half">
-                                <label for="calc-car-reg">REGNR BIL</label>
-                                <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                        <!-- Search Mode Toggle -->
+                        <div class="search-mode-tabs" style="display: flex; gap: 8px; margin-bottom: 15px;">
+                            <button type="button" class="btn btn-sm btn-secondary active" id="btn-mode-reg" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-tertiary); font-weight: 600; cursor: pointer;">🚗 Sök med Regnr</button>
+                            <button type="button" class="btn btn-sm btn-outline" id="btn-mode-model" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); background: transparent; font-weight: 600; cursor: pointer;">🚘 Sök med Modell & År</button>
+                        </div>
+                        
+                        <!-- Mode 1: Regnr Search -->
+                        <div id="mode-reg-container">
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="calc-car-reg">REGNR BIL</label>
+                                    <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                                </div>
+                                <div class="form-group half">
+                                    <label for="calc-trailer-reg">REGNR SLÄP</label>
+                                    <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                                </div>
                             </div>
-                            <div class="form-group half">
-                                <label for="calc-trailer-reg">REGNR SLÄP</label>
-                                <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                        </div>
+
+                        <!-- Mode 2: Model & Year Search -->
+                        <div id="mode-model-container" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label for="calc-car-model">BILMODELL</label>
+                                    <input type="text" id="calc-car-model" placeholder="T.ex. Volvo XC90, VW Tiguan, BMW X5..." value="Volvo XC90">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label for="calc-car-year">ÅRSMODELL</label>
+                                    <input type="number" id="calc-car-year" placeholder="2020" value="2020">
+                                </div>
                             </div>
+                            <div class="form-group">
+                                <label for="calc-trailer-model">SLÄPMODELL (VALFRITT)</label>
+                                <input type="text" id="calc-trailer-model" placeholder="T.ex. Ume-släpet B50, Cheval Gold..." value="Ume-släpet B50">
+                            </div>
+                            <div id="model-search-results" class="model-results-preview" style="margin-bottom: 12px; font-size: 12px; color: var(--text-secondary);"></div>
                         </div>
                         
                         <div class="form-group">
@@ -391,8 +419,8 @@
                                     <input type="radio" name="license-type" value="B" checked>
                                     <div class="license-card-box">
                                         <div class="license-card-info">
-                                            <strong>B-kort</strong>
-                                            <span>Max 3500kg tågvikt</span>
+                                            <strong>B-kort (Vanligt B)</strong>
+                                            <span>Max 3500kg tågvikt (eller lätt släp ≤750kg)</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -407,8 +435,40 @@
                                     <input type="radio" name="license-type" value="B96">
                                     <div class="license-card-box">
                                         <div class="license-card-info">
-                                            <strong>B96 (utökad)</strong>
+                                            <strong>B96 (Utökat B)</strong>
                                             <span>Max 4250kg tågvikt</span>
+                                        </div>
+                                        <div class="license-check-circle">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="9 12 11 14 15 10"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="license-choice-card">
+                                    <input type="radio" name="license-type" value="BE">
+                                    <div class="license-card-box">
+                                        <div class="license-card-info">
+                                            <strong>BE-kort (Efter 19 jan 2013)</strong>
+                                            <span>Släpets totalvikt max 3500kg</span>
+                                        </div>
+                                        <div class="license-check-circle">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="9 12 11 14 15 10"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="license-choice-card">
+                                    <input type="radio" name="license-type" value="BE_OLD">
+                                    <div class="license-card-box">
+                                        <div class="license-card-info">
+                                            <strong>BE-kort (Före 19 jan 2013)</strong>
+                                            <span>Ingen körkortsgräns för släpets totalvikt</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -435,9 +495,17 @@
                         <div class="card">
                             <h4 style="font-size: 15px; margin-bottom: 8px;">Tekniska specifikationer</h4>
                             <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
-                                <div>Dragbil tjänstevikt: <strong id="val-car-curb" style="color: var(--text-main);">1650 kg</strong></div>
-                                <div>Släpvagn totalvikt: <strong id="val-trailer-total" style="color: var(--text-main);">1400 kg</strong></div>
-                                <div>Total tågvikt: <strong id="val-train-weight" style="color: var(--primary-green);">3050 kg</strong></div>
+                                <div>Dragbil: <strong id="val-car-name" style="color: var(--text-main);">Volvo XC90</strong></div>
+                                <div>Dragbil tjänstevikt / totalvikt: <strong id="val-car-curb" style="color: var(--text-main);">2130 kg</strong> / <strong id="val-car-total" style="color: var(--text-main);">2750 kg</strong></div>
+                                <div>Bilens max dragvikt: <strong id="val-car-maxtow" style="color: var(--text-main);">2700 kg</strong></div>
+                                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 8px 0;">
+                                <div>Släpvagn: <strong id="val-trailer-name" style="color: var(--text-main);">Ume-släpet B50</strong></div>
+                                <div>Släp tjänstevikt / totalvikt: <strong id="val-trailer-curb" style="color: var(--text-main);">820 kg</strong> / <strong id="val-trailer-total" style="color: var(--text-main);">1990 kg</strong></div>
+                                <div>Max tillåten last i släp: <strong id="val-trailer-maxload" style="color: var(--text-main);">1170 kg</strong></div>
+                                <div>Faktisk lastad släpvikt (Släp + Häst): <strong id="val-actual-trailer-weight" style="color: var(--text-main);">1420 kg</strong></div>
+                                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 8px 0;">
+                                <div>Total sammanlagd tågvikt: <strong id="val-train-weight" style="color: var(--primary-green);">4740 kg</strong></div>
+                                <div>Körkortsgräns: <strong id="val-license-limit" style="color: var(--text-main);">Max 3500 kg</strong></div>
                             </div>
                         </div>
                     </div>
