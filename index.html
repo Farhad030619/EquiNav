@@ -31,6 +31,37 @@
         <main class="map-container-wrapper">
             <div id="map"></div>
             
+            <!-- Floating Map Controls (Zoom, Locate, Map Style) -->
+            <div class="map-floating-controls">
+                <button class="map-ctrl-btn" id="btn-map-locate" title="Min GPS-position">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="2" x2="12" y2="5"></line>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="5" y2="12"></line>
+                        <line x1="19" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                </button>
+                <button class="map-ctrl-btn" id="btn-map-layer" title="Byt kartvy (Gata / Satellit / Topografisk)">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </button>
+                <div class="map-zoom-group">
+                    <button class="map-ctrl-btn" id="btn-map-zoom-in" title="Zooma in">+</button>
+                    <button class="map-ctrl-btn" id="btn-map-zoom-out" title="Zooma ut">−</button>
+                </div>
+            </div>
+
+            <!-- Horse Safety Road Badge -->
+            <div class="horse-safety-badge" id="horse-safety-badge">
+                <span class="safety-icon">🐎</span>
+                <span class="safety-text">Hästtransport-optimerad rutt (Max 80 km/h)</span>
+            </div>
+
             <!-- Map Toast Warning -->
             <div id="map-toast" class="map-toast hidden">
                 <span class="toast-icon">📍</span>
@@ -839,12 +870,15 @@
         <!-- ========================================== -->
         <!-- LIVE NAVIGATION HUD OVERLAY (Equi live-navigering.png) -->
         <!-- ========================================== -->
+        <!-- ========================================== -->
+        <!-- LIVE NAVIGATION HUD OVERLAY (Equi live-navigering.png) -->
+        <!-- ========================================== -->
         <div id="navigation-hud" class="navigation-hud hidden">
             <!-- Top Dark Green Turn-by-Turn Banner -->
-            <div>
+            <div class="nav-top-wrapper">
                 <div class="nav-top-banner">
-                    <div class="nav-turn-icon">
-                        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+                    <div class="nav-turn-icon" id="nav-turn-icon">
+                        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" id="svg-nav-turn">
                             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
                         </svg>
                     </div>
@@ -858,7 +892,7 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                         <path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/>
                     </svg>
-                    <span>Sedan Rimbo Skolväg</span>
+                    <span id="nav-sub-text">Sedan Rimbo Skolväg</span>
                 </div>
             </div>
 
@@ -867,15 +901,29 @@
                 <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder">
                     <span>⚠️</span>
                 </button>
-                <button class="nav-action-btn" id="btn-nav-voice" title="Röstguidning">
-                    <span>🔊</span>
+                <button class="nav-action-btn active" id="btn-nav-voice" title="Röstguidning på/av">
+                    <span id="icon-nav-voice">🔊</span>
+                </button>
+                <button class="nav-action-btn" id="btn-nav-recenter" title="Centrera på ekipaget">
+                    <span>🎯</span>
                 </button>
             </div>
 
             <!-- Speed Limit & Current Speed Overlay -->
             <div class="nav-speed-overlay">
-                <div class="nav-speed-limit-circle">80</div>
-                <div class="nav-current-speed-pill">74 km/h</div>
+                <div class="nav-speed-limit-circle" title="Svensk maxgräns för hästtransport">80</div>
+                <div class="nav-current-speed-pill" id="nav-current-speed">74 km/h</div>
+            </div>
+
+            <!-- Simulation Controls (Pausa, Hastighet 1x / 3x / 8x) -->
+            <div class="nav-sim-controls">
+                <button class="btn-sim-control" id="btn-sim-play-pause" title="Pausa / Återuppta simulering">
+                    <span id="sim-play-icon">⏸️</span>
+                    <span id="sim-play-text">Paus</span>
+                </button>
+                <button class="btn-sim-control" id="btn-sim-speed-btn" data-speed="1" title="Ändra simuleringshastighet">
+                    <span>⚡ 1x</span>
+                </button>
             </div>
 
             <!-- Bottom Floating Card -->

@@ -1458,6 +1458,51 @@ html, body {
     font-size: 12px;
     font-weight: 700;
     box-shadow: var(--shadow-card);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.nav-current-speed-pill.speed-warning {
+    background-color: #ef4444 !important;
+    color: #ffffff !important;
+    animation: pulseSpeedWarning 0.8s infinite alternate;
+}
+
+@keyframes pulseSpeedWarning {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+}
+
+/* Simulation Controls in Navigation Mode */
+.nav-sim-controls {
+    position: absolute;
+    top: 130px;
+    left: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 1005;
+}
+
+.btn-sim-control {
+    background: rgba(26, 32, 28, 0.88);
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow-card);
+    transition: transform 0.15s, background-color 0.15s;
+}
+
+.btn-sim-control:active {
+    transform: scale(0.95);
+    background: rgba(26, 32, 28, 1);
 }
 
 /* Bottom Stats Card in Navigation Mode */
@@ -1513,6 +1558,129 @@ html, body {
 
 .btn-end-navigation-red:active {
     background-color: var(--sos-red-hover);
+}
+
+/* ----------------------------------------------------
+ * FLOATING MAP CONTROLS & SAFETY BADGE
+ * ---------------------------------------------------- */
+.map-floating-controls {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 50;
+}
+
+.map-ctrl-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 700;
+    transition: transform 0.15s, background-color 0.15s, box-shadow 0.15s;
+}
+
+.map-ctrl-btn:hover {
+    background: #ffffff;
+    transform: scale(1.06);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+.map-ctrl-btn:active {
+    transform: scale(0.94);
+}
+
+.map-zoom-group {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+}
+
+.map-zoom-group .map-ctrl-btn {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    height: 38px;
+}
+
+.map-zoom-group .map-ctrl-btn:first-child {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.horse-safety-badge {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    background: rgba(52, 87, 53, 0.92);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 50;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+}
+
+/* Vehicle Pulse Animation on Map */
+.vehicle-nav-marker {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vehicle-pulse-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.35);
+    animation: vehiclePulseAnim 1.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.vehicle-nav-core {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    border: 2.5px solid #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    transition: transform 0.2s ease-out;
+}
+
+@keyframes vehiclePulseAnim {
+    0% { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
 }
 
 /* ----------------------------------------------------

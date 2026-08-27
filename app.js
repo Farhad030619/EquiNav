@@ -42,8 +42,29 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // ----------------------------------------------------
+// ----------------------------------------------------
 // 1. KARTA & LEAFLET
 // ----------------------------------------------------
+let currentTileLayer = null;
+let currentTileIndex = 0;
+const TILE_PROVIDERS = [
+    {
+        name: "Gatkarta (Standard)",
+        url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        options: { maxZoom: 19, subdomains: 'abcd' }
+    },
+    {
+        name: "Satellitfoto",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        options: { maxZoom: 19 }
+    },
+    {
+        name: "Topografisk Terräng",
+        url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        options: { maxZoom: 17 }
+    }
+];
+
 function initMap() {
     try {
         const initialCenter = [59.45, 17.20]; // Mellan Stockholm och Strömsholm
@@ -52,11 +73,8 @@ function initMap() {
             attributionControl: false
         }).setView(initialCenter, 8);
 
-        // Ljus ren Apple/Carto-karta
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-            maxZoom: 19,
-            subdomains: 'abcd'
-        }).addTo(map);
+        // Ladda standardkarta
+        setMapTileLayer(0);
 
         // Klick på kartan
         map.on("click", (e) => {
@@ -65,11 +83,50 @@ function initMap() {
             handleMapClick(lat, lng);
         });
 
+        // Koppla flytande kartkontroller
+        initMapControls();
+
         // Ladda initiala hästkliniker på kartan
         addInitialClinicsToMap();
 
     } catch (err) {
         console.error("Fel vid initiering av karta:", err);
+    }
+}
+
+function setMapTileLayer(index) {
+    if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+    }
+    currentTileIndex = index % TILE_PROVIDERS.length;
+    const prov = TILE_PROVIDERS[currentTileIndex];
+    currentTileLayer = L.tileLayer(prov.url, prov.options).addTo(map);
+}
+
+function initMapControls() {
+    const btnZoomIn = document.getElementById("btn-map-zoom-in");
+    const btnZoomOut = document.getElementById("btn-map-zoom-out");
+    const btnLocate = document.getElementById("btn-map-locate");
+    const btnLayer = document.getElementById("btn-map-layer");
+
+    if (btnZoomIn) btnZoomIn.addEventListener("click", () => map.zoomIn());
+    if (btnZoomOut) btnZoomOut.addEventListener("click", () => map.zoomOut());
+
+    if (btnLocate) {
+        btnLocate.addEventListener("click", () => {
+            getUserGpsPosition((pos) => {
+                map.setView(pos, 14);
+                showToast("Centrerad på din GPS-position", "🎯");
+            });
+        });
+    }
+
+    if (btnLayer) {
+        btnLayer.addEventListener("click", () => {
+            const nextIdx = (currentTileIndex + 1) % TILE_PROVIDERS.length;
+            setMapTileLayer(nextIdx);
+            showToast(`Kartvy: ${TILE_PROVIDERS[nextIdx].name}`, "🗺️");
+        });
     }
 }
 
@@ -102,20 +159,29 @@ function handleMapClick(lat, lng) {
 
 function addInitialClinicsToMap() {
     const clinics = [
-        { name: "Mälaren Hästklinik", lat: 59.617, lon: 17.723 },
-        { name: "SLU Universitetsdjursjukhuset", lat: 59.816, lon: 17.658 },
-        { name: "Evidensia Strömsholm", lat: 59.525, lon: 16.273 }
+        { name: "Mälaren Hästklinik", lat: 59.617, lon: 17.723, tel: "08-592 540 10", address: "Hälgesta 1, Sigtuna" },
+        { name: "SLU Universitetsdjursjukhuset", lat: 59.816, lon: 17.658, tel: "018-67 21 00", address: "Ulls väg 29, Uppsala" },
+        { name: "Evidensia Specialisthästsjukhuset Strömsholm", lat: 59.525, lon: 16.273, tel: "0220-458 00", address: "Djursjukhusvägen 11, Strömsholm" }
     ];
 
     clinics.forEach(c => {
-        L.marker([c.lat, c.lon], {
+        const marker = L.marker([c.lat, c.lon], {
             icon: L.divIcon({
                 className: 'clinic-map-pin',
-                html: '<div style="background:#c04c3e;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">🏥</div>',
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
+                html: '<div style="background:#c04c3e;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;border:2px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;">🏥</div>',
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
             })
-        }).addTo(map).bindPopup(`<strong>${c.name}</strong><br>Jour öppen dygnet runt`);
+        }).addTo(map);
+
+        marker.bindPopup(`
+            <div style="font-family:sans-serif;min-width:180px;">
+                <strong style="color:#18201a;font-size:13px;">${c.name}</strong><br>
+                <span style="font-size:11px;color:#687269;">📍 ${c.address}</span><br>
+                <span style="font-size:11px;color:#c04c3e;font-weight:600;">📞 ${c.tel} (Akutjour)</span><br>
+                <button onclick="window.navigateClinic('${c.name}', ${c.lat}, ${c.lon})" style="margin-top:6px;width:100%;background:#345735;color:#fff;border:none;padding:6px;border-radius:6px;font-size:11px;font-weight:bold;cursor:pointer;">🐎 Navigera hit</button>
+            </div>
+        `);
     });
 }
 
@@ -362,6 +428,12 @@ function getCoordsForPlace(name) {
     return [59.3293, 18.0686];
 }
 
+let routeHalo = null;
+let currentRouteCoordinates = [];
+let currentRouteSteps = [];
+let currentRouteTotalDistance = 0;
+let currentRouteTotalDuration = 0;
+
 async function calculateAndShowRoute(startPlace, endPlace) {
     switchTab("tab-route");
     showToast("Beräknar säkraste rutt för hästtransport...", "🐎");
@@ -369,48 +441,62 @@ async function calculateAndShowRoute(startPlace, endPlace) {
     const startCoords = getCoordsForPlace(startPlace);
     const endCoords = getCoordsForPlace(endPlace);
 
-    // Rita markörer på kartan
+    // Rensa tidigare rutt & markörer
     if (startMarker) map.removeLayer(startMarker);
     if (endMarker) map.removeLayer(endMarker);
     if (routeLine) map.removeLayer(routeLine);
+    if (routeHalo) map.removeLayer(routeHalo);
 
     startMarker = L.marker(startCoords, {
         icon: L.divIcon({
             className: 'start-pin',
-            html: '<div style="background:#345735;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">A</div>',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+            html: '<div style="background:#10b981;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.35);">A</div>',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
         })
-    }).addTo(map).bindPopup(`Start: ${startPlace}`);
+    }).addTo(map).bindPopup(`<strong>Start:</strong> ${startPlace}`);
 
     endMarker = L.marker(endCoords, {
         icon: L.divIcon({
             className: 'end-pin',
-            html: '<div style="background:#c04c3e;color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);">B</div>',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+            html: '<div style="background:#ef4444;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;border:2.5px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.35);">B</div>',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14]
         })
-    }).addTo(map).bindPopup(`Mål: ${endPlace}`);
+    }).addTo(map).bindPopup(`<strong>Mål:</strong> ${endPlace}`);
 
-    // Hämta rutt via OpenRouteService eller OSRM
+    // Hämta rutt via OSRM med sväng-anvisningar (steps)
     try {
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`;
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson&steps=true`;
         const res = await fetch(osrmUrl);
         const data = await res.json();
 
         if (data.routes && data.routes.length > 0) {
             const route = data.routes[0];
             const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            
-            // Rita grön ruttlinje
-            routeLine = L.polyline(coordinates, {
-                color: "#345735",
-                weight: 6,
-                opacity: 0.9,
-                lineJoin: 'round'
+            currentRouteCoordinates = coordinates;
+            currentRouteSteps = route.legs && route.legs[0] && route.legs[0].steps ? route.legs[0].steps : [];
+            currentRouteTotalDistance = route.distance;
+            currentRouteTotalDuration = route.duration;
+
+            // Rita dubbellagers ruttlinje (Halo + Neon Emerald kärna)
+            routeHalo = L.polyline(coordinates, {
+                color: "#064e3b",
+                weight: 11,
+                opacity: 0.35,
+                lineJoin: 'round',
+                lineCap: 'round'
             }).addTo(map);
 
-            map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+            routeLine = L.polyline(coordinates, {
+                color: "#10b981",
+                weight: 5.5,
+                opacity: 0.95,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(map);
+
+            map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
 
             // Uppdatera statistik
             const distKm = (route.distance / 1000).toFixed(1);
@@ -433,21 +519,45 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 
             // Visa resultatsektionen
             document.getElementById("route-results").classList.remove("hidden");
-            showToast("Rutt beräknad och optimerad!", "✅");
+            showToast("Rutt beräknad och optimerad för hästtransport!", "✅");
             return;
         }
     } catch (e) {
-        console.warn("Kunde inte hämta OSRM-rutt, ritar interpolerad linje:", e);
+        console.warn("Kunde inte hämta OSRM-rutt, ritar interpolerad fallback-linje:", e);
     }
 
     // Fallback ruttlinje
-    const fallbackCoords = [startCoords, [(startCoords[0]+endCoords[0])/2 + 0.05, (startCoords[1]+endCoords[1])/2], endCoords];
-    routeLine = L.polyline(fallbackCoords, {
-        color: "#345735",
-        weight: 6,
-        opacity: 0.9
+    const fallbackCoords = [
+        startCoords,
+        [(startCoords[0]*2 + endCoords[0])/3 + 0.02, (startCoords[1]*2 + endCoords[1])/3],
+        [(startCoords[0] + endCoords[0]*2)/3 - 0.02, (startCoords[1] + endCoords[1]*2)/3],
+        endCoords
+    ];
+    currentRouteCoordinates = fallbackCoords;
+    currentRouteSteps = [
+        { name: "Startväg", distance: 1500, maneuver: { type: "depart", modifier: "straight" } },
+        { name: "E18 / Riksväg", distance: 12000, maneuver: { type: "turn", modifier: "right" } },
+        { name: "Destinationsväg", distance: 2000, maneuver: { type: "arrive", modifier: "straight" } }
+    ];
+    currentRouteTotalDistance = 15500;
+    currentRouteTotalDuration = 900;
+
+    routeHalo = L.polyline(fallbackCoords, {
+        color: "#064e3b",
+        weight: 11,
+        opacity: 0.35,
+        lineJoin: 'round'
     }).addTo(map);
-    map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+
+    routeLine = L.polyline(fallbackCoords, {
+        color: "#10b981",
+        weight: 5.5,
+        opacity: 0.95,
+        lineJoin: 'round'
+    }).addTo(map);
+
+    map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
+    document.getElementById("route-results").classList.remove("hidden");
 
     document.getElementById("route-results").classList.remove("hidden");
 }
@@ -808,33 +918,33 @@ function initProfileSettings() {
 // ----------------------------------------------------
 // 9. LIVE-NAVIGERING HUD (Equi live-navigering.png)
 // ----------------------------------------------------
+let navInterval = null;
+let navCoordsIndex = 0;
+let isNavRunning = false;
+let isNavPaused = false;
+let navSpeedMultiplier = 1;
+let isVoiceEnabled = true;
+let vehicleMarker = null;
+let lastSpokenText = "";
+
 function initNavigationMode() {
     const startNavBtn = document.getElementById("btn-start-navigation");
     const endNavBtn = document.getElementById("btn-end-navigation");
-    const navHud = document.getElementById("navigation-hud");
     const navHazardBtn = document.getElementById("btn-nav-hazard");
     const navVoiceBtn = document.getElementById("btn-nav-voice");
+    const navRecenterBtn = document.getElementById("btn-nav-recenter");
+    const simPlayPauseBtn = document.getElementById("btn-sim-play-pause");
+    const simSpeedBtn = document.getElementById("btn-sim-speed-btn");
 
     if (startNavBtn) {
         startNavBtn.addEventListener("click", () => {
-            // Dölj sidebar och visa HUD över kartan
-            const sidebar = document.getElementById("app-sidebar");
-            sidebar.className = "sidebar state-collapsed";
-            navHud.classList.remove("hidden");
-
-            if (routeLine) {
-                map.setView(routeLine.getBounds().getCenter(), 14);
-            }
-
-            showToast("GPS Live-navigering startad!", "🟢");
+            startLiveNavigation();
         });
     }
 
     if (endNavBtn) {
         endNavBtn.addEventListener("click", () => {
-            navHud.classList.add("hidden");
-            expandSidebar("expanded");
-            showToast("Navigering avslutad.", "🏁");
+            stopLiveNavigation();
         });
     }
 
@@ -846,9 +956,297 @@ function initNavigationMode() {
 
     if (navVoiceBtn) {
         navVoiceBtn.addEventListener("click", () => {
-            showToast("Röstguidning: Påslagen (Svenska)", "🔊");
+            isVoiceEnabled = !isVoiceEnabled;
+            const icon = document.getElementById("icon-nav-voice");
+            if (isVoiceEnabled) {
+                navVoiceBtn.classList.add("active");
+                if (icon) icon.innerText = "🔊";
+                showToast("Röstguidning: Påslagen (Svenska)", "🔊");
+                speakSwedishInstruction("Röstguidning påslagen.");
+            } else {
+                navVoiceBtn.classList.remove("active");
+                if (icon) icon.innerText = "🔇";
+                showToast("Röstguidning: Avstängd", "🔇");
+            }
         });
     }
+
+    if (navRecenterBtn) {
+        navRecenterBtn.addEventListener("click", () => {
+            if (vehicleMarker) {
+                map.setView(vehicleMarker.getLatLng(), 16, { animate: true });
+                showToast("Centrerad på ekipaget", "🎯");
+            }
+        });
+    }
+
+    if (simPlayPauseBtn) {
+        simPlayPauseBtn.addEventListener("click", () => {
+            isNavPaused = !isNavPaused;
+            const icon = document.getElementById("sim-play-icon");
+            const text = document.getElementById("sim-play-text");
+            if (isNavPaused) {
+                if (icon) icon.innerText = "▶️";
+                if (text) text.innerText = "Kör";
+                showToast("Navigering pausad", "⏸️");
+            } else {
+                if (icon) icon.innerText = "⏸️";
+                if (text) text.innerText = "Paus";
+                showToast("Navigering återupptagen", "▶️");
+            }
+        });
+    }
+
+    if (simSpeedBtn) {
+        simSpeedBtn.addEventListener("click", () => {
+            if (navSpeedMultiplier === 1) navSpeedMultiplier = 3;
+            else if (navSpeedMultiplier === 3) navSpeedMultiplier = 8;
+            else navSpeedMultiplier = 1;
+
+            simSpeedBtn.innerText = `⚡ ${navSpeedMultiplier}x`;
+            showToast(`Simuleringshastighet: ${navSpeedMultiplier}x`, "⚡");
+        });
+    }
+}
+
+function startLiveNavigation() {
+    if (!currentRouteCoordinates || currentRouteCoordinates.length < 2) {
+        calculateAndShowRoute("Stockholm", "Strömsholm");
+    }
+
+    const sidebar = document.getElementById("app-sidebar");
+    const navHud = document.getElementById("navigation-hud");
+
+    sidebar.className = "sidebar state-collapsed";
+    navHud.classList.remove("hidden");
+
+    isNavRunning = true;
+    isNavPaused = false;
+    navCoordsIndex = 0;
+    lastSpokenText = "";
+
+    // Skapa fordonets pulserande markör
+    if (vehicleMarker) map.removeLayer(vehicleMarker);
+    const startPt = currentRouteCoordinates[0] || [59.3293, 18.0686];
+
+    vehicleMarker = L.marker(startPt, {
+        icon: L.divIcon({
+            className: 'vehicle-nav-marker',
+            html: `
+                <div class="vehicle-pulse-ring"></div>
+                <div class="vehicle-nav-core" id="vehicle-core-icon">🐎</div>
+            `,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        }),
+        zIndexOffset: 1000
+    }).addTo(map);
+
+    map.setView(startPt, 16, { animate: true });
+
+    showToast("Live GPS-navigering startad! Max 80 km/h med hästsläp.", "🟢");
+    speakSwedishInstruction("Navigering startad. Följ den gröna rutten. Tänk på att hålla max 80 km i timmen med hästtransport.");
+
+    if (navInterval) clearInterval(navInterval);
+    navInterval = setInterval(stepNavigationSimulation, 500);
+}
+
+function stopLiveNavigation() {
+    isNavRunning = false;
+    if (navInterval) {
+        clearInterval(navInterval);
+        navInterval = null;
+    }
+
+    if (vehicleMarker) {
+        map.removeLayer(vehicleMarker);
+        vehicleMarker = null;
+    }
+
+    const navHud = document.getElementById("navigation-hud");
+    navHud.classList.add("hidden");
+    expandSidebar("expanded");
+
+    showToast("Navigering avslutad.", "🏁");
+}
+
+function stepNavigationSimulation() {
+    if (!isNavRunning || isNavPaused || !currentRouteCoordinates.length) return;
+
+    // Flytta framåt baserat på hastighetsmultiplikator
+    navCoordsIndex += navSpeedMultiplier;
+    if (navCoordsIndex >= currentRouteCoordinates.length - 1) {
+        navCoordsIndex = currentRouteCoordinates.length - 1;
+        finishNavigation();
+        return;
+    }
+
+    const currentPt = currentRouteCoordinates[navCoordsIndex];
+    const nextPt = currentRouteCoordinates[Math.min(navCoordsIndex + 1, currentRouteCoordinates.length - 1)];
+
+    // Beräkna riktningsvinkel (bearing)
+    const bearing = calculateBearing(currentPt[0], currentPt[1], nextPt[0], nextPt[1]);
+    const vehicleIcon = document.getElementById("vehicle-core-icon");
+    if (vehicleIcon) {
+        vehicleIcon.style.transform = `rotate(${bearing}deg)`;
+    }
+
+    if (vehicleMarker) {
+        vehicleMarker.setLatLng(currentPt);
+    }
+
+    // Centrera kartan mjukt på ekipaget
+    map.panTo(currentPt, { animate: true, duration: 0.4 });
+
+    // Hitta aktuell och nästa svänginstruktion
+    updateTurnInstructionsAndStats(currentPt);
+}
+
+function updateTurnInstructionsAndStats(currentPt) {
+    const totalPoints = currentRouteCoordinates.length;
+    const remainingFraction = Math.max(0, (totalPoints - navCoordsIndex) / totalPoints);
+    const remainingKm = Math.max(0.1, ((currentRouteTotalDistance || 15000) * remainingFraction / 1000)).toFixed(1);
+    
+    // Hästtransporthastighet ~72-78 km/h på rak väg, lägre vid svängar
+    const baseSpeed = Math.floor(72 + Math.sin(navCoordsIndex * 0.3) * 6);
+    const speedPill = document.getElementById("nav-current-speed");
+    if (speedPill) {
+        speedPill.innerText = `${baseSpeed} km/h`;
+        if (baseSpeed > 80) {
+            speedPill.classList.add("speed-warning");
+        } else {
+            speedPill.classList.remove("speed-warning");
+        }
+    }
+
+    // Beräkna ankomsttid
+    const remainingMins = Math.round((remainingKm / 75) * 60);
+    const hrs = Math.floor(remainingMins / 60);
+    const mins = remainingMins % 60;
+    const timeRemainingText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + remainingMins);
+    const arrivalClock = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const navTimeEl = document.getElementById("nav-time-remaining");
+    const navDistEl = document.getElementById("nav-dist-remaining");
+    const navEtaEl = document.getElementById("nav-eta");
+
+    if (navTimeEl) navTimeEl.innerText = timeRemainingText;
+    if (navDistEl) navDistEl.innerText = `${remainingKm} km`;
+    if (navEtaEl) navEtaEl.innerText = `Ankomst ${arrivalClock}`;
+
+    // Hitta närmaste svängpunkt i steps
+    const step = getActiveManeuverStep(navCoordsIndex, totalPoints);
+    const turnIcon = document.getElementById("nav-turn-icon");
+    const nextDist = document.getElementById("nav-next-dist");
+    const nextText = document.getElementById("nav-next-text");
+    const subText = document.getElementById("nav-sub-text");
+
+    if (nextDist) nextDist.innerText = step.distText;
+    if (nextText) nextText.innerText = step.instruction;
+    if (subText) subText.innerText = step.subInstruction;
+
+    if (turnIcon) {
+        turnIcon.innerHTML = step.iconSvg;
+    }
+
+    // Röstguidning vid nyckelavstånd
+    if (step.shouldSpeak && step.instruction !== lastSpokenText) {
+        lastSpokenText = step.instruction;
+        speakSwedishInstruction(step.speechText);
+    }
+}
+
+function getActiveManeuverStep(index, total) {
+    const progress = index / total;
+
+    if (progress > 0.92) {
+        return {
+            distText: "150 m",
+            instruction: "Sväng höger framme vid målet",
+            subInstruction: "Sedan är du framme vid stallet",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
+            speechText: "Om 150 meter, sväng höger framme vid målet.",
+            shouldSpeak: true
+        };
+    } else if (progress > 0.65) {
+        return {
+            distText: "450 m",
+            instruction: "Ta 2:a avfarten i rondellen mot Enköping",
+            subInstruction: "Sedan fortsätt på väg 263",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+            speechText: "Om 450 meter, ta andra avfarten i rondellen.",
+            shouldSpeak: true
+        };
+    } else if (progress > 0.35) {
+        return {
+            distText: "1,2 km",
+            instruction: "Håll höger in på E18 mot Västerås",
+            subInstruction: "Sedan fortsätt 8,4 km på motorväg",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
+            speechText: "Om en kilometer, håll höger in på E18. Håll max 80 med släpet.",
+            shouldSpeak: true
+        };
+    } else {
+        return {
+            distText: "250 m",
+            instruction: "Sväng vänster in på Vibyvägen",
+            subInstruction: "Sedan Rimbo Skolväg",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>',
+            speechText: "Om 250 meter, sväng vänster in på Vibyvägen.",
+            shouldSpeak: index === 1
+        };
+    }
+}
+
+function finishNavigation() {
+    isNavRunning = false;
+    if (navInterval) clearInterval(navInterval);
+
+    const nextText = document.getElementById("nav-next-text");
+    const subText = document.getElementById("nav-sub-text");
+    const nextDist = document.getElementById("nav-next-dist");
+
+    if (nextText) nextText.innerText = "Du har nått din destination! 🐎🏁";
+    if (subText) subText.innerText = "Godkänd och säker parkering för hästtransport";
+    if (nextDist) nextDist.innerText = "Framme";
+
+    speakSwedishInstruction("Du har nått din destination. Tack för att du kör säkert med EquiNav!");
+    showToast("Du har nått din destination! 🎉", "🏁");
+}
+
+function speakSwedishInstruction(text) {
+    if (!isVoiceEnabled || !window.speechSynthesis) return;
+
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "sv-SE";
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const svVoice = voices.find(v => v.lang.startsWith("sv"));
+        if (svVoice) utterance.voice = svVoice;
+
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn("Talsyntes ej tillgänglig:", e);
+    }
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const toRad = deg => deg * (Math.PI / 180);
+    const toDeg = rad => rad * (180 / Math.PI);
+
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+
+    const brng = toDeg(Math.atan2(y, x));
+    return (brng + 360) % 360;
 }
 
 // ----------------------------------------------------
