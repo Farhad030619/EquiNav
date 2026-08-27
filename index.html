@@ -345,6 +345,16 @@
                             <button id="btn-start-navigation" class="btn-main-action" style="margin-top: 14px;">
                                 <span>📡 Starta GPS-Navigering</span>
                             </button>
+                            <button id="btn-share-trip" class="btn-share-trip" style="margin-top: 10px;">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                </svg>
+                                <span>Dela resa (Safe Arrival)</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -364,6 +374,15 @@
                     </div>
                     <p class="section-intro">Kontrollera att din dragbil och släpkombination är laglig utifrån ditt körkort.</p>
                     
+                    <button id="btn-load-preset" class="btn-load-preset-pill hidden">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Ladda mitt sparade ekipage</span>
+                    </button>
+
                     <div class="card">
                         <div class="form-row">
                             <div class="form-group half">
@@ -681,10 +700,57 @@
                         <p class="profile-help-note">Profilinställningar lagras lokalt för framtida ruttberäkningar och viktkalkyler.</p>
                     </div>
 
+                    <!-- Mitt Ekipage (Sparade fordon) -->
+                    <div class="card" id="my-vehicle-card">
+                        <h4 class="card-inner-title">Mitt Ekipage</h4>
+                        <p class="section-intro">Spara din bil och ditt släp så slipper du fylla i uppgifterna varje gång.</p>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="preset-car-reg">DRAGBIL REGNR</label>
+                                <input type="text" id="preset-car-reg" placeholder="T.ex. ABC123" class="uppercase-input">
+                            </div>
+                            <div class="form-group half">
+                                <label for="preset-trailer-reg">SLÄP REGNR</label>
+                                <input type="text" id="preset-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="preset-horse-weight">HÄSTENS VIKT</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="preset-horse-weight" placeholder="600">
+                                <span class="unit">kg</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="preset-name">EKIPAGENAMN (valfritt)</label>
+                            <input type="text" id="preset-name" placeholder="T.ex. Volvo + Cheval Liberté">
+                        </div>
+
+                        <button id="btn-save-preset" class="btn-dark-action">Spara mitt ekipage</button>
+                        
+                        <div id="saved-preset-display" class="saved-preset-info hidden" style="margin-top: 14px;">
+                            <div class="calc-result-pill">
+                                <span id="saved-preset-text">Inget ekipage sparat ännu</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Navigation Rows -->
                     <div class="card profile-menu-card">
-                        <div class="menu-list-row" id="menu-vehicles">
-                            <div class="menu-left">
+                        <div class="night-mode-toggle" id="toggle-night-mode">
+                            <div class="night-toggle-left">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                                </svg>
+                                <span>Nattläge</span>
+                            </div>
+                            <button class="toggle-switch" id="night-mode-switch" aria-label="Växla nattläge"></button>
+                        </div>
+                        <a href="#" class="profile-menu-item">
+                            <div class="menu-item-left">
                                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="1" y="3" width="15" height="13"></rect>
                                     <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
@@ -727,7 +793,8 @@
 
                     <!-- App Footer -->
                     <div class="profile-app-footer">
-                        <span>EquiNav MVP v1.0.0 · <a href="#" id="btn-reset-app">Nollställ data</a></span>
+                        <button id="btn-open-pro" class="btn-upgrade-pro-pill">⭐ Uppgradera till EquiNav Pro</button>
+                        <span style="display: block; margin-top: 10px;">EquiNav v2.0.0 · <a href="#" id="btn-reset-app">Nollställ data</a></span>
                     </div>
                 </div>
 
@@ -821,13 +888,66 @@
                 </div>
                 <button id="btn-end-navigation" class="btn-end-navigation-red">Avsluta rutt</button>
             </div>
+
+            <!-- Zero-Speed Ad Banner (only when stationary) -->
+            <div id="zero-speed-ad" class="zero-speed-ad hidden">
+                <div class="zero-speed-ad-inner">
+                    <span class="zero-speed-ad-badge">ANNONS</span>
+                    <div class="zero-speed-ad-content">
+                        <strong>Circle K Enköping</strong>
+                        <span>Släpvänlig parkering · 2,3 km</span>
+                    </div>
+                    <button class="zero-speed-ad-close" id="btn-close-ad">×</button>
+                </div>
+            </div>
         </div>
 
+        <!-- EquiNav Pro Upgrade Modal -->
+        <div id="pro-modal" class="pro-modal-overlay hidden">
+            <div class="pro-modal-card">
+                <button class="pro-modal-close" id="btn-close-pro-modal">×</button>
+                <div class="pro-modal-header">
+                    <div class="pro-badge-icon">⭐</div>
+                    <h3>EquiNav Pro</h3>
+                    <p>Lås upp premiumfunktioner för aktiva ryttare och professionella transportörer.</p>
+                </div>
+                <div class="pro-features-list">
+                    <div class="pro-feature-row"><span class="pro-check">✓</span><span>Apple CarPlay & Android Auto</span></div>
+                    <div class="pro-feature-row"><span class="pro-check">✓</span><span>Automatisk körjournal & milersättning</span></div>
+                    <div class="pro-feature-row"><span class="pro-check">✓</span><span>Multi-stopp ruttplanering</span></div>
+                    <div class="pro-feature-row"><span class="pro-check">✓</span><span>Obegränsat med sparade ekipage</span></div>
+                    <div class="pro-feature-row"><span class="pro-check">✓</span><span>Helt annonsfritt gränssnitt</span></div>
+                </div>
+                <div class="pro-pricing">
+                    <div class="pro-price-card pro-price-featured">
+                        <span class="pro-price-label">Årsabonnemang</span>
+                        <span class="pro-price-value">399 kr/år</span>
+                        <span class="pro-price-sub">~33 kr/mån</span>
+                    </div>
+                    <div class="pro-price-row">
+                        <div class="pro-price-card">
+                            <span class="pro-price-label">Helgpass</span>
+                            <span class="pro-price-value">29 kr</span>
+                            <span class="pro-price-sub">3 dagar</span>
+                        </div>
+                        <div class="pro-price-card">
+                            <span class="pro-price-label">Månadspass</span>
+                            <span class="pro-price-value">59 kr</span>
+                            <span class="pro-price-sub">per månad</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-main-action" id="btn-subscribe-pro" style="margin-top: 8px;">Uppgradera till Pro</button>
+            </div>
+        </div>
     </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- App Database layer -->
     <script src="db.js?v=20260815_2300"></script>
 

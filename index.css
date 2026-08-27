@@ -1582,3 +1582,479 @@ html, body {
     color: var(--text-secondary);
     cursor: pointer;
 }
+
+/* ============================================================
+   NIGHT DRIVING MODE (Nattläge)
+   ============================================================ */
+[data-theme="dark"] {
+    --primary-green: #4a8a4d;
+    --primary-green-hover: #3d7340;
+    --dark-forest: #0d1a0f;
+    --bg-app: #121815;
+    --card-bg: #1a221c;
+    --card-border: #2a352c;
+    --input-bg: #212b23;
+    --input-border: #2a352c;
+    --text-main: #e8ece9;
+    --text-secondary: #8a978c;
+    --text-muted: #5a665c;
+    --shadow-subtle: 0 2px 10px rgba(0, 0, 0, 0.15);
+    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+    --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] body {
+    background-color: #0a0f0c;
+}
+
+[data-theme="dark"] .bottom-nav {
+    background-color: #1a221c;
+    border-top-color: #2a352c;
+}
+
+[data-theme="dark"] .dark-about-card {
+    background: linear-gradient(135deg, #0d1a0f 0%, #0a120c 100%);
+}
+
+[data-theme="dark"] .emergency-hero-card {
+    box-shadow: 0 8px 24px rgba(192, 76, 62, 0.15);
+}
+
+[data-theme="dark"] .nav-top-banner {
+    background-color: #0d1a0f;
+}
+
+[data-theme="dark"] .nav-sub-banner {
+    background-color: #1a2a1d;
+}
+
+[data-theme="dark"] .nav-action-btn {
+    background-color: #1a221c;
+    border-color: #2a352c;
+}
+
+[data-theme="dark"] .nav-bottom-card {
+    background-color: #1a221c;
+}
+
+[data-theme="dark"] .nav-speed-limit-circle {
+    background-color: #1a221c;
+    color: #e8ece9;
+}
+
+/* Night mode toggle button styling */
+.night-mode-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f2ee;
+    cursor: pointer;
+}
+
+[data-theme="dark"] .night-mode-toggle {
+    border-bottom-color: #2a352c;
+}
+
+.night-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background-color: #ccd2cd;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: none;
+    padding: 0;
+}
+
+.toggle-switch.active {
+    background-color: var(--primary-green);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch.active::after {
+    transform: translateX(20px);
+}
+
+/* ============================================================
+   MITT EKIPAGE / SAVED PRESETS
+   ============================================================ */
+.btn-load-preset-pill {
+    width: 100%;
+    background-color: #eaf2eb;
+    color: var(--primary-green);
+    border: 1px dashed var(--primary-green);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn-load-preset-pill:active {
+    transform: scale(0.98);
+    background-color: #d8e8da;
+}
+
+.saved-preset-info {
+    animation: fadeInTab 0.2s ease-out;
+}
+
+/* ============================================================
+   HAZARD UPVOTING / COMMUNITY VALIDATION
+   ============================================================ */
+.hazard-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.hazard-vote-btn {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: background 0.15s;
+}
+
+.hazard-vote-btn:active {
+    background: #e2e6e0;
+}
+
+.hazard-vote-btn.upvoted {
+    background-color: #eaf2eb;
+    border-color: var(--primary-green);
+    color: var(--primary-green);
+}
+
+.hazard-vote-count {
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+/* Expanded SOS clinic cards */
+.clinic-turnspace {
+    font-size: 12px;
+    color: var(--primary-green);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clinic-card .clinic-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin-top: 4px;
+}
+/* ============================================================
+   SAFE ARRIVAL / SHARE TRIP BUTTON
+   ============================================================ */
+.btn-share-trip {
+    width: 100%;
+    background-color: #eaf2eb;
+    color: var(--primary-green);
+    border: 1px solid var(--primary-green);
+    border-radius: var(--radius-md);
+    padding: 13px 16px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn-share-trip:active {
+    transform: scale(0.98);
+    background-color: #d8e8da;
+}
+
+/* ============================================================
+   ZERO-SPEED AD BANNER
+   ============================================================ */
+.zero-speed-ad {
+    position: absolute;
+    top: 140px;
+    left: 16px;
+    right: 16px;
+    z-index: 510;
+    animation: slideDownAd 0.3s ease-out;
+}
+
+@keyframes slideDownAd {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.zero-speed-ad-inner {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: var(--shadow-float);
+    border: 1px solid var(--card-border);
+}
+
+.zero-speed-ad-badge {
+    background-color: var(--input-bg);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.zero-speed-ad-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.zero-speed-ad-content strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.zero-speed-ad-content span {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.zero-speed-ad-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   EQUINAV PRO UPGRADE MODAL
+   ============================================================ */
+.pro-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.pro-modal-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    padding: 28px 22px;
+    width: 100%;
+    max-width: 380px;
+    position: relative;
+    box-shadow: var(--shadow-float);
+    animation: fadeInTab 0.25s ease-out;
+}
+
+.pro-modal-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.pro-modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.pro-badge-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+
+.pro-modal-header h3 {
+    font-family: var(--font-title);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 6px;
+}
+
+.pro-modal-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.pro-features-list {
+    margin-bottom: 20px;
+}
+
+.pro-feature-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--card-border);
+}
+
+.pro-feature-row:last-child {
+    border-bottom: none;
+}
+
+.pro-check {
+    color: var(--primary-green);
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.pro-pricing {
+    margin-bottom: 6px;
+}
+
+.pro-price-featured {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #264227 100%);
+    color: #ffffff;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.pro-price-featured .pro-price-label {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.9;
+    letter-spacing: 0.3px;
+}
+
+.pro-price-featured .pro-price-value {
+    font-family: var(--font-title);
+    font-size: 26px;
+    font-weight: 700;
+    display: block;
+    margin: 4px 0;
+}
+
+.pro-price-featured .pro-price-sub {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.pro-price-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pro-price-card {
+    background: var(--input-bg);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pro-price-card .pro-price-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.pro-price-card .pro-price-value {
+    font-family: var(--font-title);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.pro-price-card .pro-price-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.btn-upgrade-pro-pill {
+    background: linear-gradient(135deg, var(--primary-green) 0%, #264227 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 12px 24px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 14px rgba(52, 87, 53, 0.25);
+    transition: transform 0.1s;
+}
+
+.btn-upgrade-pro-pill:active {
+    transform: scale(0.97);
+}

@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     const body = `
     <REQUEST>
         <LOGIN authenticationkey="${apiKey}" />
-        <QUERY objecttype="Situation" schemaversion="1.5">
+        <QUERY objecttype="Situation" schemaversion="1.4">
             <FILTER>
                 <EQ name="Deviation.ManagedCause" value="true" />
             </FILTER>

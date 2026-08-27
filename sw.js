@@ -1,4 +1,5 @@
-const CACHE_NAME = 'equinav-cache-v17-akkes-ui';
+const CACHE_NAME = 'equinav-cache-v18-full';
+const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -11,7 +12,6 @@ const ASSETS_TO_CACHE = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap'
 ];
 
-// Install Service Worker and cache core files
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -22,13 +22,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Service Worker and clear ALL old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
+          if (cache !== CACHE_NAME && cache !== ROUTE_CACHE) {
             console.log('SW: Clearing old cache:', cache);
             return caches.delete(cache);
           }
@@ -38,15 +37,59 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first strategy for index.html and fresh assets
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CACHE_ROUTE') {
+    caches.open(ROUTE_CACHE).then((cache) => {
+      // Create a synthetic response
+      const response = new Response(JSON.stringify(event.data.data), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      cache.put(event.data.url || 'last-route', response);
+      console.log('SW: Route cached explicitly for offline use');
+    });
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   
-  if (requestUrl.host.includes('supabase.co') || requestUrl.host.includes('project-osrm.org')) {
+  if (requestUrl.host.includes('supabase.co')) {
     return;
   }
 
-  // Network first for HTML to always get latest UI
+  // Carto Map Tiles: Cache First, then Network
+  if (requestUrl.host.includes('basemaps.cartocdn.com')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        }).catch(() => { /* offline tile */ });
+      })
+    );
+    return;
+  }
+  
+  // OSRM routes: Network First, fallback to ROUTE_CACHE
+  if (requestUrl.host.includes('project-osrm.org')) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(ROUTE_CACHE).then((cache) => cache.put(event.request, responseClone));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
