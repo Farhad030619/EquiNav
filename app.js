@@ -26,6 +26,7 @@ const LOCATION_COORDS = {
     "uppsala": [59.8586, 17.6389]
 };
 
+let currentUserGpsCoords = null;
 let currentRouteData = {
     start: "Stockholm",
     end: "Strömsholm",
@@ -41,8 +42,21 @@ window.addEventListener("DOMContentLoaded", () => {
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("./sw.js").then((reg) => {
             console.log("Service Worker aktiv:", reg.scope);
+            reg.update();
         }).catch((err) => {
             console.warn("Service Worker registrering misslyckades:", err);
+        });
+    }
+
+    // Rensa gamla Carto-cacher om de finns kvar i webbläsaren
+    if (typeof caches !== "undefined") {
+        caches.keys().then(keys => {
+            keys.forEach(k => {
+                if (k.includes('v18') || k.includes('v19') || k.includes('v20')) {
+                    console.log("Rensar gammal tile-cache:", k);
+                    caches.delete(k);
+                }
+            });
         });
     }
 
@@ -328,7 +342,8 @@ function initHomeRoutePlanner() {
                 startIn.value = "Min position (GPS)";
                 startIn.dataset.lat = pos[0];
                 startIn.dataset.lng = pos[1];
-                showToast("GPS-position lokaliserad", "🟢");
+                currentUserGpsCoords = pos;
+                showToast("GPS-position lokaliserad och inzoomad", "🟢");
             });
         });
     }
@@ -363,7 +378,8 @@ function initRoutePlanner() {
                 startIn.value = "Min position (GPS)";
                 startIn.dataset.lat = pos[0];
                 startIn.dataset.lng = pos[1];
-                showToast("GPS-position lokaliserad", "🟢");
+                currentUserGpsCoords = pos;
+                showToast("GPS-position lokaliserad och inzoomad", "🟢");
             });
         });
     }
@@ -384,7 +400,20 @@ function initRoutePlanner() {
 }
 
 function getCoordsForPlace(name) {
+    if (!name) return currentUserGpsCoords || [59.3293, 18.0686];
     const key = name.toLowerCase().trim();
+
+    // Om användaren valt sin egen GPS-position
+    if (key.includes("min position") || key.includes("gps")) {
+        if (currentUserGpsCoords) {
+            return currentUserGpsCoords;
+        }
+        const startIn = document.getElementById("input-start") || document.getElementById("home-input-start");
+        if (startIn && startIn.dataset.lat && startIn.dataset.lng) {
+            return [parseFloat(startIn.dataset.lat), parseFloat(startIn.dataset.lng)];
+        }
+    }
+
     if (LOCATION_COORDS[key]) {
         return LOCATION_COORDS[key];
     }
@@ -931,8 +960,16 @@ function initNavigationMode() {
                 navNextStep.innerText = `Följ skyltar mot ${currentRouteData.end || "destinationen"}`;
             }
 
-            if (routeLine) {
-                map.setView(routeLine.getBounds().getCenter(), 14);
+            // Zooma in direkt på användarens GPS-position vid start av navigering
+            if (currentUserGpsCoords) {
+                map.setView(currentUserGpsCoords, 16, { animate: true });
+            } else if (routeLine) {
+                const latlngs = routeLine.getLatLngs();
+                if (latlngs && latlngs.length > 0) {
+                    map.setView(latlngs[0], 16, { animate: true });
+                } else {
+                    map.setView(routeLine.getBounds().getCenter(), 14);
+                }
             }
 
             showToast("GPS Live-navigering startad!", "🟢");
@@ -1164,27 +1201,42 @@ function initProModal() {
 // ----------------------------------------------------
 function getUserGpsPosition(callback) {
     if (navigator.geolocation) {
+        showToast("Söker din GPS-position...", "📍");
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const coords = [parseFloat(pos.coords.latitude.toFixed(5)), parseFloat(pos.coords.longitude.toFixed(5))];
+                currentUserGpsCoords = coords;
+
                 if (userLocationMarker) map.removeLayer(userLocationMarker);
                 userLocationMarker = L.circleMarker(coords, {
-                    radius: 8,
+                    radius: 9,
                     fillColor: "#345735",
                     color: "#ffffff",
                     weight: 3,
                     fillOpacity: 1
                 }).addTo(map);
-                callback(coords);
+
+                // Zooma in direkt på användarens position!
+                map.setView(coords, 14, { animate: true });
+
+                if (callback) callback(coords);
             },
             (err) => {
                 console.warn("GPS fel:", err);
-                callback([59.3293, 18.0686]); // Stockholm fallback
+                if (currentUserGpsCoords) {
+                    if (callback) callback(currentUserGpsCoords);
+                } else {
+                    const fallback = [59.3293, 18.0686];
+                    currentUserGpsCoords = fallback;
+                    if (callback) callback(fallback);
+                }
             },
-            { enableHighAccuracy: true, timeout: 5000 }
+            { enableHighAccuracy: true, timeout: 8000 }
         );
     } else {
-        callback([59.3293, 18.0686]);
+        const fallback = [59.3293, 18.0686];
+        currentUserGpsCoords = fallback;
+        if (callback) callback(fallback);
     }
 }
 
