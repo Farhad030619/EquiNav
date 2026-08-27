@@ -75,10 +75,10 @@ function initMap() {
             attributionControl: false
         }).setView(initialCenter, 8);
 
-        // Ljus ren Apple/Carto-karta
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        // Öppen, ren och tillförlitlig OpenStreetMap-karta utan krav på API-nycklar
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
-            subdomains: 'abcd'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         // Klick på kartan
@@ -1213,19 +1213,6 @@ function initNightMode() {
     const switchBtn = document.getElementById('night-mode-switch');
     if (!toggle || !switchBtn) return;
 
-    // Spara referens till befintligt ljust kartlager
-    map.eachLayer(layer => {
-        if (layer._url && layer._url.includes('basemaps.cartocdn.com')) {
-            lightTileLayer = layer;
-        }
-    });
-
-    // Skapa mörkt kartlager (inte tillagt än)
-    darkTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd'
-    });
-
     // Ladda sparad preferens
     const saved = localStorage.getItem('equinav-night-mode');
     if (saved === 'on') {
@@ -1247,15 +1234,6 @@ function activateNightMode(switchBtn) {
     if (switchBtn) switchBtn.classList.add('active');
     localStorage.setItem('equinav-night-mode', 'on');
 
-    // Byt karttiles till mörkt tema
-    if (lightTileLayer && map.hasLayer(lightTileLayer)) {
-        map.removeLayer(lightTileLayer);
-    }
-    if (darkTileLayer && !map.hasLayer(darkTileLayer)) {
-        darkTileLayer.addTo(map);
-    }
-
-    // Uppdatera meta theme-color
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', '#121815');
 }
@@ -1264,14 +1242,6 @@ function deactivateNightMode(switchBtn) {
     document.documentElement.removeAttribute('data-theme');
     if (switchBtn) switchBtn.classList.remove('active');
     localStorage.setItem('equinav-night-mode', 'off');
-
-    // Byt tillbaka till ljust karttema
-    if (darkTileLayer && map.hasLayer(darkTileLayer)) {
-        map.removeLayer(darkTileLayer);
-    }
-    if (lightTileLayer && !map.hasLayer(lightTileLayer)) {
-        lightTileLayer.addTo(map);
-    }
 
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', '#345735');

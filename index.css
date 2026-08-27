@@ -1607,6 +1607,10 @@ html, body {
     background-color: #0a0f0c;
 }
 
+[data-theme="dark"] .leaflet-tile {
+    filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
 [data-theme="dark"] .bottom-nav {
     background-color: #1a221c;
     border-top-color: #2a352c;

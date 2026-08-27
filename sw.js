@@ -1,4 +1,4 @@
-const CACHE_NAME = 'equinav-cache-v19-full';
+const CACHE_NAME = 'equinav-cache-v20-full';
 const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
@@ -58,8 +58,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Carto Map Tiles: Cache First, then Network
-  if (requestUrl.host.includes('basemaps.cartocdn.com')) {
+  // OpenStreetMap Tiles: Cache First, then Network
+  if (requestUrl.host.includes('tile.openstreetmap.org')) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {
         if (cachedResponse) {
