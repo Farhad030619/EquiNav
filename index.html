@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260827_2355">
+    <link rel="stylesheet" href="index.css?v=20260828_0130">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -23,8 +23,58 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="EquiNav">
     <link rel="apple-touch-icon" href="logo.png">
+
+    <!-- Förhindra att webbläsaren cachar denna HTML-sida -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
+    <!--
+      NUKLEÄR SW/CACHE-RENSNING
+      Körs INLINE innan några externa skript laddas.
+      Fixar problemet där gamla Service Workers serverar cachade Carto-tiles.
+    -->
+    <script>
+    (function() {
+        var CURRENT_VERSION = 'v24-2026-08-28';
+        var lastVersion = localStorage.getItem('equinav-sw-version');
+
+        // Om versionen ändrats eller aldrig satts → rensa allt
+        if (lastVersion !== CURRENT_VERSION) {
+            console.log('[EquiNav] Version ändrad från', lastVersion, 'till', CURRENT_VERSION, '– rensar alla cacher och SWs');
+
+            // 1. Avregistrera ALLA Service Workers
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    registrations.forEach(function(reg) {
+                        console.log('[EquiNav] Avregistrerar SW:', reg.scope);
+                        reg.unregister();
+                    });
+                });
+            }
+
+            // 2. Radera ALLA cacher
+            if (typeof caches !== 'undefined') {
+                caches.keys().then(function(keys) {
+                    keys.forEach(function(k) {
+                        console.log('[EquiNav] Raderar cache:', k);
+                        caches.delete(k);
+                    });
+                });
+            }
+
+            // 3. Spara den nya versionen
+            localStorage.setItem('equinav-sw-version', CURRENT_VERSION);
+
+            // 4. Ladda om sidan en gång för att starta helt rent
+            if (lastVersion !== null) {
+                // Bara reload om det är en uppgradering, inte första gången
+                window.location.reload(true);
+            }
+        }
+    })();
+    </script>
     <div class="app-container">
         
         <!-- Background Map (For live routing and inspection) -->
@@ -922,9 +972,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App Database layer -->
-    <script src="db.js?v=20260827_2355"></script>
+    <script src="db.js?v=20260828_0130"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260827_2355"></script>
+    <script src="app.js?v=20260828_0130"></script>
 </body>
 </html>

@@ -38,43 +38,12 @@ let currentRouteData = {
 
 // Initialisering vid sidladdning
 window.addEventListener("DOMContentLoaded", () => {
-    // Registrera Service Worker för offline-PWA
+    // Registrera Service Worker för offline-PWA (rensning hanteras av inline-scriptet i index.html)
     if ("serviceWorker" in navigator) {
-        // Tvinga omedelbar uppdatering av SW
         navigator.serviceWorker.register("./sw.js").then((reg) => {
             console.log("Service Worker aktiv:", reg.scope);
-            // Tvinga uppdatering varje sidladdning
-            reg.update();
-            // Om en ny SW väntar, aktivera den omedelbart
-            if (reg.waiting) {
-                reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-            }
-            reg.addEventListener('updatefound', () => {
-                const newSw = reg.installing;
-                if (newSw) {
-                    newSw.addEventListener('statechange', () => {
-                        if (newSw.state === 'activated') {
-                            console.log("Ny Service Worker aktiverad – laddar om sidan");
-                            window.location.reload();
-                        }
-                    });
-                }
-            });
         }).catch((err) => {
             console.warn("Service Worker registrering misslyckades:", err);
-        });
-    }
-
-    // Aggressiv rensning: radera ALLA gamla cacher (inklusive Carto-tiles)
-    if (typeof caches !== "undefined") {
-        caches.keys().then(keys => {
-            keys.forEach(k => {
-                // Radera allt utom den allra senaste SW-cachen
-                if (k !== 'equinav-v23-osm-only' && k !== 'equinav-routes-v1') {
-                    console.log("Raderar gammal cache:", k);
-                    caches.delete(k);
-                }
-            });
         });
     }
 
@@ -356,6 +325,7 @@ function initHomeRoutePlanner() {
     if (gpsBtn) {
         gpsBtn.addEventListener("click", () => {
             getUserGpsPosition((pos) => {
+                if (!pos) return; // GPS misslyckades
                 const startIn = document.getElementById("home-input-start");
                 startIn.value = "Min position (GPS)";
                 startIn.dataset.lat = pos[0];
@@ -392,6 +362,7 @@ function initRoutePlanner() {
     if (useGpsBtn) {
         useGpsBtn.addEventListener("click", () => {
             getUserGpsPosition((pos) => {
+                if (!pos) return; // GPS misslyckades
                 const startIn = document.getElementById("input-start");
                 startIn.value = "Min position (GPS)";
                 startIn.dataset.lat = pos[0];
@@ -478,6 +449,10 @@ async function calculateAndShowRoute(startPlace, endPlace) {
     if (isGpsPlaceName(startPlace) && !currentUserGpsCoords) {
         showToast("Hämtar din GPS-position...", "📍");
         const coords = await getGpsPositionAsync();
+        if (!coords) {
+            showToast("Kunde inte hämta GPS-position. Ange en startplats manuellt.", "❌");
+            return;
+        }
         currentUserGpsCoords = coords;
         // Uppdatera inputfälten med GPS-koordinaterna
         const homeStart = document.getElementById("home-input-start");
@@ -491,6 +466,8 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 
     const startCoords = getCoordsForPlace(startPlace, startInputEl);
     const endCoords = getCoordsForPlace(endPlace, endInputEl);
+
+    console.log("[EquiNav Route] Start:", startPlace, "→", startCoords, " | Mål:", endPlace, "→", endCoords);
 
     // Rita markörer på kartan
     if (startMarker) map.removeLayer(startMarker);
@@ -1257,44 +1234,47 @@ function initProModal() {
 // HJÄLPHANTERARE
 // ----------------------------------------------------
 function getUserGpsPosition(callback) {
-    if (navigator.geolocation) {
-        showToast("Söker din GPS-position...", "📍");
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const coords = [parseFloat(pos.coords.latitude.toFixed(5)), parseFloat(pos.coords.longitude.toFixed(5))];
-                currentUserGpsCoords = coords;
-
-                if (userLocationMarker) map.removeLayer(userLocationMarker);
-                userLocationMarker = L.circleMarker(coords, {
-                    radius: 9,
-                    fillColor: "#345735",
-                    color: "#ffffff",
-                    weight: 3,
-                    fillOpacity: 1
-                }).addTo(map);
-
-                // Zooma in direkt på användarens position!
-                map.setView(coords, 14, { animate: true });
-
-                if (callback) callback(coords);
-            },
-            (err) => {
-                console.warn("GPS fel:", err);
-                if (currentUserGpsCoords) {
-                    if (callback) callback(currentUserGpsCoords);
-                } else {
-                    const fallback = [59.3293, 18.0686];
-                    currentUserGpsCoords = fallback;
-                    if (callback) callback(fallback);
-                }
-            },
-            { enableHighAccuracy: true, timeout: 8000 }
-        );
-    } else {
-        const fallback = [59.3293, 18.0686];
-        currentUserGpsCoords = fallback;
-        if (callback) callback(fallback);
+    if (!navigator.geolocation) {
+        showToast("GPS stöds inte i denna webbläsare", "❌");
+        if (callback) callback(null);
+        return;
     }
+    
+    showToast("Söker din GPS-position...", "📍");
+    navigator.geolocation.getCurrentPosition(
+        (pos) => {
+            const coords = [parseFloat(pos.coords.latitude.toFixed(5)), parseFloat(pos.coords.longitude.toFixed(5))];
+            console.log("[EquiNav GPS] Position hittad:", coords);
+            currentUserGpsCoords = coords;
+
+            if (userLocationMarker) map.removeLayer(userLocationMarker);
+            userLocationMarker = L.circleMarker(coords, {
+                radius: 9,
+                fillColor: "#345735",
+                color: "#ffffff",
+                weight: 3,
+                fillOpacity: 1
+            }).addTo(map);
+
+            // Zooma in direkt på användarens position
+            map.setView(coords, 14, { animate: true });
+
+            if (callback) callback(coords);
+        },
+        (err) => {
+            console.warn("[EquiNav GPS] Fel:", err.code, err.message);
+            if (err.code === 1) {
+                showToast("GPS-åtkomst nekad. Tillåt platsåtkomst i webbläsaren.", "⚠️");
+            } else if (err.code === 2) {
+                showToast("GPS-position otillgänglig just nu.", "⚠️");
+            } else {
+                showToast("GPS-timeout. Försök igen.", "⚠️");
+            }
+            // Returnera null – INTE Stockholm-fallback
+            if (callback) callback(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
 }
 
 function showToast(msg, icon = "📍") {

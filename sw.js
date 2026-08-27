@@ -3,9 +3,9 @@ const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './index.css?v=20260827_2355',
-  './app.js?v=20260827_2355',
-  './db.js?v=20260827_2355',
+  './index.css?v=20260828_0130',
+  './app.js?v=20260828_0130',
+  './db.js?v=20260828_0130',
   './logo.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
