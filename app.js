@@ -52,6 +52,7 @@ window.addEventListener("DOMContentLoaded", () => {
     initNavigationTree();
     initHomeRoutePlanner();
     initRoutePlanner();
+    initAutocomplete();
     initWeightCalculator();
     initHazards();
     initEmergencySOS();
@@ -388,6 +389,173 @@ function initRoutePlanner() {
     }
 }
 
+// ----------------------------------------------------
+// ADRESS-AUTOCOMPLETE (Nominatim / OpenStreetMap Geocoding)
+// Gratis, ingen API-nyckel krävs
+// ----------------------------------------------------
+let autocompleteTimers = {};
+
+function initAutocomplete() {
+    const fields = [
+        { input: "home-input-start", dropdown: "dropdown-home-start" },
+        { input: "home-input-end", dropdown: "dropdown-home-end" },
+        { input: "input-start", dropdown: "dropdown-route-start" },
+        { input: "input-end", dropdown: "dropdown-route-end" }
+    ];
+
+    fields.forEach(({ input: inputId, dropdown: dropdownId }) => {
+        const inputEl = document.getElementById(inputId);
+        const dropdownEl = document.getElementById(dropdownId);
+        if (!inputEl || !dropdownEl) return;
+
+        // Sök vid inmatning (debounced 350ms)
+        inputEl.addEventListener("input", () => {
+            const query = inputEl.value.trim();
+
+            // Rensa eventuella sparade koordinater vid ny sökning
+            delete inputEl.dataset.lat;
+            delete inputEl.dataset.lng;
+
+            if (autocompleteTimers[inputId]) clearTimeout(autocompleteTimers[inputId]);
+
+            if (query.length < 2) {
+                dropdownEl.classList.add("hidden");
+                dropdownEl.innerHTML = "";
+                return;
+            }
+
+            autocompleteTimers[inputId] = setTimeout(() => {
+                searchNominatim(query, dropdownEl, inputEl);
+            }, 350);
+        });
+
+        // Fokus: visa dropdown igen om det finns resultat
+        inputEl.addEventListener("focus", () => {
+            if (dropdownEl.children.length > 0 && inputEl.value.length >= 2) {
+                dropdownEl.classList.remove("hidden");
+            }
+        });
+    });
+
+    // Stäng alla dropdowns vid klick utanför
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".autocomplete-wrapper")) {
+            document.querySelectorAll(".autocomplete-dropdown").forEach(dd => {
+                dd.classList.add("hidden");
+            });
+        }
+    });
+}
+
+async function searchNominatim(query, dropdownEl, inputEl) {
+    dropdownEl.innerHTML = '<div class="autocomplete-loading">Söker...</div>';
+    dropdownEl.classList.remove("hidden");
+
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?` +
+            `format=json&q=${encodeURIComponent(query)}` +
+            `&countrycodes=se&limit=6&addressdetails=1&accept-language=sv`;
+
+        const res = await fetch(url, {
+            headers: { "User-Agent": "EquiNav/1.0 (hasttransport-gps)" }
+        });
+        const results = await res.json();
+
+        if (!results || results.length === 0) {
+            dropdownEl.innerHTML = '<div class="autocomplete-no-results">Inga resultat hittades</div>';
+            return;
+        }
+
+        dropdownEl.innerHTML = "";
+        results.forEach(place => {
+            const item = document.createElement("div");
+            item.className = "autocomplete-item";
+
+            const icon = getPlaceIcon(place.type, place.class);
+            const name = place.address ?
+                (place.address.road || place.address.hamlet || place.address.village ||
+                 place.address.town || place.address.city || place.address.county || place.display_name.split(",")[0]) :
+                place.display_name.split(",")[0];
+            const address = formatPlaceAddress(place);
+
+            item.innerHTML = `
+                <div class="autocomplete-item-icon">${icon}</div>
+                <div class="autocomplete-item-text">
+                    <div class="autocomplete-item-name">${escapeHtml(name)}</div>
+                    <div class="autocomplete-item-address">${escapeHtml(address)}</div>
+                </div>
+            `;
+
+            item.addEventListener("click", () => {
+                inputEl.value = name + (address ? ", " + address : "");
+                inputEl.dataset.lat = parseFloat(place.lat).toFixed(5);
+                inputEl.dataset.lng = parseFloat(place.lon).toFixed(5);
+
+                // Spara i LOCATION_COORDS för snabb uppslagning
+                const coordKey = inputEl.value.toLowerCase().trim();
+                LOCATION_COORDS[coordKey] = [parseFloat(place.lat), parseFloat(place.lon)];
+
+                dropdownEl.classList.add("hidden");
+
+                // Synka med det andra fältparet om applicerbart
+                syncInputFields(inputEl.id, inputEl.value, inputEl.dataset.lat, inputEl.dataset.lng);
+
+                console.log("[Autocomplete] Vald:", inputEl.value, "→", [place.lat, place.lon]);
+            });
+
+            dropdownEl.appendChild(item);
+        });
+    } catch (err) {
+        console.warn("[Autocomplete] Nominatim-sökning misslyckades:", err);
+        dropdownEl.innerHTML = '<div class="autocomplete-no-results">Sökning misslyckades, försök igen</div>';
+    }
+}
+
+function getPlaceIcon(type, placeClass) {
+    if (placeClass === "highway" || type === "road" || type === "street") return "🛣️";
+    if (type === "city" || type === "town") return "🏙️";
+    if (type === "village" || type === "hamlet") return "🏘️";
+    if (type === "suburb" || type === "neighbourhood") return "📍";
+    if (placeClass === "amenity") return "🏛️";
+    if (placeClass === "leisure" || type === "park") return "🌳";
+    if (type === "administrative" || type === "county") return "📌";
+    return "📍";
+}
+
+function formatPlaceAddress(place) {
+    if (!place.address) return "";
+    const parts = [];
+    if (place.address.municipality) parts.push(place.address.municipality);
+    else if (place.address.town) parts.push(place.address.town);
+    else if (place.address.city) parts.push(place.address.city);
+    if (place.address.county) parts.push(place.address.county);
+    if (place.address.state) parts.push(place.address.state);
+    return parts.join(", ");
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function syncInputFields(sourceId, value, lat, lng) {
+    const pairs = {
+        "home-input-start": "input-start",
+        "input-start": "home-input-start",
+        "home-input-end": "input-end",
+        "input-end": "home-input-end"
+    };
+    const targetId = pairs[sourceId];
+    if (!targetId) return;
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) {
+        targetEl.value = value;
+        if (lat) targetEl.dataset.lat = lat;
+        if (lng) targetEl.dataset.lng = lng;
+    }
+}
+
 function isGpsPlaceName(name) {
     if (!name) return false;
     const key = name.toLowerCase().trim();
@@ -401,21 +569,23 @@ function getCoordsForPlace(name, inputEl) {
 
     // Om texten matchar GPS-relaterade uttryck
     if (isGpsPlaceName(name)) {
-        // Kontrollera dataset lat/lng på inputfältet först
         if (inputEl && inputEl.dataset.lat && inputEl.dataset.lng) {
             return [parseFloat(inputEl.dataset.lat), parseFloat(inputEl.dataset.lng)];
         }
-        // Annars använd sparade GPS-koordinater
         if (currentUserGpsCoords) {
             return currentUserGpsCoords;
         }
-        // Sista försök: kolla alla startfält
         for (const id of ["home-input-start", "input-start"]) {
             const el = document.getElementById(id);
             if (el && el.dataset.lat && el.dataset.lng) {
                 return [parseFloat(el.dataset.lat), parseFloat(el.dataset.lng)];
             }
         }
+    }
+
+    // PRIORITET: Om inputfältet har lat/lng från autocomplete-val, använd dem
+    if (inputEl && inputEl.dataset.lat && inputEl.dataset.lng) {
+        return [parseFloat(inputEl.dataset.lat), parseFloat(inputEl.dataset.lng)];
     }
 
     if (LOCATION_COORDS[key]) {
