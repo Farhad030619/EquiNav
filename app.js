@@ -5,6 +5,7 @@
 
 let map = null;
 let routeLine = null;
+let routeOutline = null;
 let startMarker = null;
 let endMarker = null;
 let userLocationMarker = null;
@@ -643,6 +644,7 @@ async function calculateAndShowRoute(startPlace, endPlace) {
     if (startMarker) map.removeLayer(startMarker);
     if (endMarker) map.removeLayer(endMarker);
     if (routeLine) map.removeLayer(routeLine);
+    if (routeOutline) map.removeLayer(routeOutline);
 
     startMarker = L.marker(startCoords, {
         icon: L.divIcon({
@@ -672,12 +674,22 @@ async function calculateAndShowRoute(startPlace, endPlace) {
             const route = data.routes[0];
             const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             
-            // Rita grön ruttlinje
+            // Rita ruttlinje med skarp outline (svart kant + ljusgrå inre)
+            if (routeOutline) map.removeLayer(routeOutline);
+            routeOutline = L.polyline(coordinates, {
+                color: "#111827",
+                weight: 9,
+                opacity: 0.85,
+                lineJoin: 'round',
+                lineCap: 'round'
+            }).addTo(map);
+
             routeLine = L.polyline(coordinates, {
-                color: "#345735",
-                weight: 6,
-                opacity: 0.9,
-                lineJoin: 'round'
+                color: "#e2e8f0",
+                weight: 5,
+                opacity: 1,
+                lineJoin: 'round',
+                lineCap: 'round'
             }).addTo(map);
 
             map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
@@ -723,10 +735,20 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 
     // Fallback ruttlinje
     const fallbackCoords = [startCoords, [(startCoords[0]+endCoords[0])/2 + 0.05, (startCoords[1]+endCoords[1])/2], endCoords];
+    if (routeOutline) map.removeLayer(routeOutline);
+    routeOutline = L.polyline(fallbackCoords, {
+        color: "#111827",
+        weight: 9,
+        opacity: 0.85,
+        lineJoin: 'round',
+        lineCap: 'round'
+    }).addTo(map);
     routeLine = L.polyline(fallbackCoords, {
-        color: "#345735",
-        weight: 6,
-        opacity: 0.9
+        color: "#e2e8f0",
+        weight: 5,
+        opacity: 1,
+        lineJoin: 'round',
+        lineCap: 'round'
     }).addTo(map);
     map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
 
