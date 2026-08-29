@@ -1,11 +1,11 @@
-const CACHE_NAME = 'equinav-v26-merge-all';
+const CACHE_NAME = 'equinav-v27-navfix';
 const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './index.css?v=20260829_1945',
-  './app.js?v=20260829_1945',
-  './db.js?v=20260829_1945',
+  './index.css?v=20260829_2005',
+  './app.js?v=20260829_2005',
+  './db.js?v=20260829_2005',
   './logo.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

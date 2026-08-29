@@ -394,12 +394,12 @@ html, body {
     flex-shrink: 0;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #eaf2eb, #d5e3d6);
+    border-radius: 50%;
+    background: rgba(52, 87, 53, 0.08);
+    color: var(--primary-green);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
     margin-top: 1px;
 }
 
@@ -454,7 +454,8 @@ html, body {
 }
 
 [data-theme="dark"] .autocomplete-item-icon {
-    background: linear-gradient(135deg, #1a2a1d, #243527);
+    background: rgba(121, 163, 124, 0.15);
+    color: #a3c9a6;
 }
 
 [data-theme="dark"] .autocomplete-item {

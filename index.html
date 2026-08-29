@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260829_1945">
+    <link rel="stylesheet" href="index.css?v=20260829_2005">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -37,7 +37,7 @@
     -->
     <script>
     (function() {
-        var CURRENT_VERSION = 'v26-2026-08-29-merge';
+        var CURRENT_VERSION = 'v27-2026-08-29-navfix';
         var lastVersion = localStorage.getItem('equinav-sw-version');
 
         // Om versionen ändrats eller aldrig satts → rensa allt
@@ -966,16 +966,16 @@
                         </svg>
                     </div>
                     <div class="nav-instruction-details">
-                        <span class="nav-next-dist" id="nav-next-dist">150 m</span>
-                        <span class="nav-next-step" id="nav-next-text">Sväng vänster in på Vibyvägen</span>
+                        <span class="nav-next-dist" id="nav-next-dist">--</span>
+                        <span class="nav-next-step" id="nav-next-text">Startar rutt...</span>
                     </div>
                 </div>
 
-                <div class="nav-sub-banner" id="nav-sub-banner">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <div class="nav-sub-banner hidden" id="nav-sub-banner">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" id="svg-nav-sub">
                         <path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/>
                     </svg>
-                    <span id="nav-sub-text">Sedan Rimbo Skolväg</span>
+                    <span id="nav-sub-text"></span>
                 </div>
             </div>
 
@@ -1081,9 +1081,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App Database layer -->
-    <script src="db.js?v=20260829_1945"></script>
+    <script src="db.js?v=20260829_2005"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260829_1945"></script>
+    <script src="app.js?v=20260829_2005"></script>
 </body>
 </html>

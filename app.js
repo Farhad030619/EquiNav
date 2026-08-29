@@ -507,89 +507,113 @@ function initAutocomplete() {
 }
 
 async function searchNominatim(query, dropdownEl, inputEl) {
-    dropdownEl.innerHTML = '<div class="autocomplete-loading">Söker...</div>';
+    dropdownEl.innerHTML = '<div class="autocomplete-loading">Söker adresser och platser...</div>';
     dropdownEl.classList.remove("hidden");
 
     try {
         const url = `https://nominatim.openstreetmap.org/search?` +
             `format=json&q=${encodeURIComponent(query)}` +
-            `&countrycodes=se&limit=6&addressdetails=1&accept-language=sv`;
+            `&countrycodes=se&limit=8&addressdetails=1&accept-language=sv`;
 
         const res = await fetch(url, {
-            headers: { "User-Agent": "EquiNav/1.0 (hasttransport-gps)" }
+            headers: { "User-Agent": "EquiNav/2.0 (hasttransport-gps)" }
         });
         const results = await res.json();
 
         if (!results || results.length === 0) {
-            dropdownEl.innerHTML = '<div class="autocomplete-no-results">Inga resultat hittades</div>';
+            dropdownEl.innerHTML = '<div class="autocomplete-no-results">Inga gator eller platser hittades</div>';
             return;
         }
 
         dropdownEl.innerHTML = "";
+        const seenKeys = new Set();
+
         results.forEach(place => {
+            const addr = place.address || {};
+            
+            // Extrahera primärt namn (Gatunamn + husnr, eller ort/platsnamn)
+            let primaryName = "";
+            if (addr.road) {
+                primaryName = addr.road + (addr.house_number ? " " + addr.house_number : "");
+            } else if (place.name && place.name !== addr.country) {
+                primaryName = place.name;
+            } else {
+                primaryName = place.display_name.split(",")[0].trim();
+            }
+
+            // Extrahera sekundär beskrivning (Stadsdel, Kommun, Län)
+            const secondaryParts = [];
+            if (addr.neighbourhood && addr.neighbourhood !== primaryName) secondaryParts.push(addr.neighbourhood);
+            if (addr.suburb && addr.suburb !== primaryName && !secondaryParts.includes(addr.suburb)) secondaryParts.push(addr.suburb);
+            
+            const cityOrTown = addr.city || addr.town || addr.village || addr.municipality;
+            if (cityOrTown && cityOrTown !== primaryName && !secondaryParts.includes(cityOrTown)) {
+                secondaryParts.push(cityOrTown);
+            }
+            if (addr.county && !secondaryParts.includes(addr.county)) {
+                secondaryParts.push(addr.county);
+            }
+
+            const secondaryText = secondaryParts.join(", ") || addr.country || "Sverige";
+
+            // Undvik dubletter i listan
+            const uniqueKey = `${primaryName.toLowerCase()}|${secondaryText.toLowerCase()}`;
+            if (seenKeys.has(uniqueKey)) return;
+            seenKeys.add(uniqueKey);
+
             const item = document.createElement("div");
             item.className = "autocomplete-item";
 
-            const icon = getPlaceIcon(place.type, place.class);
-            const name = place.address ?
-                (place.address.road || place.address.hamlet || place.address.village ||
-                 place.address.town || place.address.city || place.address.county || place.display_name.split(",")[0]) :
-                place.display_name.split(",")[0];
-            const address = formatPlaceAddress(place);
-
+            // Google Maps-stil: Ren minimalistisk platsikon (SVG istället för emoji)
             item.innerHTML = `
-                <div class="autocomplete-item-icon">${icon}</div>
+                <div class="autocomplete-item-icon">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                </div>
                 <div class="autocomplete-item-text">
-                    <div class="autocomplete-item-name">${escapeHtml(name)}</div>
-                    <div class="autocomplete-item-address">${escapeHtml(address)}</div>
+                    <div class="autocomplete-item-name">${escapeHtml(primaryName)}</div>
+                    <div class="autocomplete-item-address">${escapeHtml(secondaryText)}</div>
                 </div>
             `;
 
             item.addEventListener("click", () => {
-                inputEl.value = name + (address ? ", " + address : "");
+                // Formatera det valda adressvärdet snyggt i inmatningsfältet
+                let fullValue = primaryName;
+                if (cityOrTown && !primaryName.includes(cityOrTown)) {
+                    fullValue += `, ${cityOrTown}`;
+                } else if (secondaryText && !primaryName.includes(secondaryText)) {
+                    fullValue += `, ${secondaryParts[0] || secondaryText}`;
+                }
+
+                inputEl.value = fullValue;
                 inputEl.dataset.lat = parseFloat(place.lat).toFixed(5);
                 inputEl.dataset.lng = parseFloat(place.lon).toFixed(5);
 
-                // Spara i LOCATION_COORDS för snabb uppslagning
-                const coordKey = inputEl.value.toLowerCase().trim();
-                LOCATION_COORDS[coordKey] = [parseFloat(place.lat), parseFloat(place.lon)];
+                // Spara koordinater under både fullvärde och primärnamn
+                const latNum = parseFloat(place.lat);
+                const lonNum = parseFloat(place.lon);
+                LOCATION_COORDS[fullValue.toLowerCase().trim()] = [latNum, lonNum];
+                LOCATION_COORDS[primaryName.toLowerCase().trim()] = [latNum, lonNum];
+                LOCATION_COORDS[place.display_name.toLowerCase().trim()] = [latNum, lonNum];
 
                 dropdownEl.classList.add("hidden");
 
-                // Synka med det andra fältparet om applicerbart
+                // Synka med det länkade fältet
                 syncInputFields(inputEl.id, inputEl.value, inputEl.dataset.lat, inputEl.dataset.lng);
-
-                console.log("[Autocomplete] Vald:", inputEl.value, "→", [place.lat, place.lon]);
             });
 
             dropdownEl.appendChild(item);
         });
+
+        if (dropdownEl.children.length === 0) {
+            dropdownEl.innerHTML = '<div class="autocomplete-no-results">Inga gator eller platser hittades</div>';
+        }
     } catch (err) {
         console.warn("[Autocomplete] Nominatim-sökning misslyckades:", err);
         dropdownEl.innerHTML = '<div class="autocomplete-no-results">Sökning misslyckades, försök igen</div>';
     }
-}
-
-function getPlaceIcon(type, placeClass) {
-    if (placeClass === "highway" || type === "road" || type === "street") return "🛣️";
-    if (type === "city" || type === "town") return "🏙️";
-    if (type === "village" || type === "hamlet") return "🏘️";
-    if (type === "suburb" || type === "neighbourhood") return "📍";
-    if (placeClass === "amenity") return "🏛️";
-    if (placeClass === "leisure" || type === "park") return "🌳";
-    if (type === "administrative" || type === "county") return "📌";
-    return "📍";
-}
-
-function formatPlaceAddress(place) {
-    if (!place.address) return "";
-    const parts = [];
-    if (place.address.municipality) parts.push(place.address.municipality);
-    else if (place.address.town) parts.push(place.address.town);
-    else if (place.address.city) parts.push(place.address.city);
-    if (place.address.county) parts.push(place.address.county);
-    if (place.address.state) parts.push(place.address.state);
-    return parts.join(", ");
 }
 
 function escapeHtml(text) {
@@ -1467,6 +1491,180 @@ function initNavigationMode() {
     }
 }
 
+let processedRouteSteps = [];
+
+function processRouteSteps(rawSteps, totalDistance, startPlace, endPlace) {
+    if (!rawSteps || rawSteps.length === 0) {
+        // Skapa dynamiska generiska steg baserat på verkliga start- och slutplatser
+        return [
+            {
+                mainText: `Kör ut från ${startPlace || "startplatsen"}`,
+                subText: `Sedan följ vägen mot ${endPlace || "destinationen"}`,
+                speechText: `Kör ut från ${startPlace || "startplatsen"} och följ vägen. Tänk på max 80 km i timmen med hästtransport.`,
+                iconSvg: getManeuverSvg("depart", "straight"),
+                dist: Math.round(totalDistance * 0.2),
+                cumDistStart: 0,
+                cumDistEnd: Math.round(totalDistance * 0.2)
+            },
+            {
+                mainText: `Fortsätt längs huvudvägen mot ${endPlace || "destinationen"}`,
+                subText: `Sedan sväng mot målet`,
+                speechText: `Fortsätt längs huvudvägen mot ${endPlace || "destinationen"}.`,
+                iconSvg: getManeuverSvg("continue", "straight"),
+                dist: Math.round(totalDistance * 0.6),
+                cumDistStart: Math.round(totalDistance * 0.2),
+                cumDistEnd: Math.round(totalDistance * 0.8)
+            },
+            {
+                mainText: `Framme vid målet i ${endPlace || "destinationen"}`,
+                subText: `Sedan är du framme vid godkänd hästparkering`,
+                speechText: `Framme vid målet i ${endPlace || "destinationen"}. Du har nått din destination.`,
+                iconSvg: getManeuverSvg("arrive", "straight"),
+                dist: Math.round(totalDistance * 0.2),
+                cumDistStart: Math.round(totalDistance * 0.8),
+                cumDistEnd: totalDistance
+            }
+        ];
+    }
+
+    let cum = 0;
+    const processed = [];
+
+    for (let i = 0; i < rawSteps.length; i++) {
+        const s = rawSteps[i];
+        const nextS = rawSteps[i + 1];
+        const name = s.name || s.ref || (i === 0 ? (startPlace || "starten") : "vägen");
+        const nextName = nextS ? (nextS.name || nextS.ref || (i + 1 === rawSteps.length - 1 ? (endPlace || "målet") : "nästa väg")) : "";
+        const mType = (s.maneuver && s.maneuver.type) || "turn";
+        const mMod = (s.maneuver && s.maneuver.modifier) || "straight";
+
+        let mainText = "";
+        let speechText = "";
+
+        if (mType === "depart") {
+            mainText = name ? `Kör ut på ${name}` : `Kör ut från ${startPlace || "starten"}`;
+            speechText = `Börja köra ut på ${name || startPlace || "rutten"}. Håll max 80 med hästtransport.`;
+        } else if (mType === "arrive") {
+            mainText = name ? `Framme vid målet på ${name}` : `Framme vid målet i ${endPlace || "destinationen"}`;
+            speechText = `Framme vid målet. Du har nått din destination.`;
+        } else if (mType === "roundabout" || mType === "rotary") {
+            const exit = s.maneuver && s.maneuver.exit ? `${s.maneuver.exit}:e avfarten` : "avfarten";
+            mainText = name ? `Ta ${exit} i rondellen in på ${name}` : `Ta ${exit} i rondellen`;
+            speechText = `Ta ${exit} i rondellen in på ${name || "nästa väg"}.`;
+        } else if (mType === "on ramp" || mType === "ramp") {
+            mainText = name ? `Ta påfarten in på ${name}` : "Ta påfarten till motorvägen";
+            speechText = `Ta påfarten in på ${name || "motorvägen"}.`;
+        } else if (mType === "off ramp") {
+            mainText = name ? `Ta avfarten in på ${name}` : "Ta avfarten";
+            speechText = `Ta avfarten in på ${name || "avfartsvägen"}.`;
+        } else if (mType === "fork") {
+            if (mMod.includes("left")) {
+                mainText = name ? `Håll vänster vid delningen mot ${name}` : "Håll vänster vid delningen";
+                speechText = `Håll vänster vid delningen mot ${name || "vägen"}.`;
+            } else if (mMod.includes("right")) {
+                mainText = name ? `Håll höger vid delningen mot ${name}` : "Håll höger vid delningen";
+                speechText = `Håll höger vid delningen mot ${name || "vägen"}.`;
+            } else {
+                mainText = name ? `Fortsätt framåt mot ${name}` : "Fortsätt framåt vid delningen";
+                speechText = `Fortsätt framåt vid delningen mot ${name || "vägen"}.`;
+            }
+        } else if (mType === "merge") {
+            mainText = name ? `Kör ihop med trafiken på ${name}` : "Kör ihop med trafiken";
+            speechText = `Kör ihop med trafiken på ${name || "vägen"}.`;
+        } else if (mType === "end of road") {
+            if (mMod.includes("left")) {
+                mainText = name ? `Vid vägens slut, sväng vänster in på ${name}` : "Vid vägens slut, sväng vänster";
+                speechText = `Vid vägens slut, sväng vänster in på ${name || "vägen"}.`;
+            } else {
+                mainText = name ? `Vid vägens slut, sväng höger in på ${name}` : "Vid vägens slut, sväng höger";
+                speechText = `Vid vägens slut, sväng höger in på ${name || "vägen"}.`;
+            }
+        } else {
+            // Normal turn / continue / new name
+            if (mMod === "left" || mMod === "sharp left") {
+                mainText = name ? `Sväng vänster in på ${name}` : "Sväng vänster";
+                speechText = `Sväng vänster in på ${name || "nästa väg"}.`;
+            } else if (mMod === "right" || mMod === "sharp right") {
+                mainText = name ? `Sväng höger in på ${name}` : "Sväng höger";
+                speechText = `Sväng höger in på ${name || "nästa väg"}.`;
+            } else if (mMod === "slight left") {
+                mainText = name ? `Håll svagt vänster in på ${name}` : "Håll svagt vänster";
+                speechText = `Håll svagt vänster in på ${name || "nästa väg"}.`;
+            } else if (mMod === "slight right") {
+                mainText = name ? `Håll svagt höger in på ${name}` : "Håll svagt höger";
+                speechText = `Håll svagt höger in på ${name || "nästa väg"}.`;
+            } else if (mMod === "uturn") {
+                mainText = name ? `Gör en U-sväng in på ${name}` : "Gör en U-sväng";
+                speechText = `Gör en U-sväng in på ${name || "vägen"}.`;
+            } else {
+                mainText = name ? `Fortsätt rakt fram på ${name}` : `Fortsätt mot ${endPlace || "destinationen"}`;
+                speechText = `Fortsätt rakt fram på ${name || "vägen"}.`;
+            }
+        }
+
+        // Beräkna nästa steg för sub-banner
+        let subText = "";
+        if (nextS) {
+            const nextType = (nextS.maneuver && nextS.maneuver.type) || "";
+            const nextMod = (nextS.maneuver && nextS.maneuver.modifier) || "";
+            if (nextType === "arrive") {
+                subText = "Sedan är du framme vid målet";
+            } else if (nextMod.includes("left")) {
+                subText = nextName ? `Sedan sväng vänster in på ${nextName}` : "Sedan sväng vänster";
+            } else if (nextMod.includes("right")) {
+                subText = nextName ? `Sedan sväng höger in på ${nextName}` : "Sedan sväng höger";
+            } else if (nextType === "roundabout") {
+                subText = nextName ? `Sedan rondell mot ${nextName}` : "Sedan rondell";
+            } else if (nextType === "off ramp") {
+                subText = nextName ? `Sedan avfart mot ${nextName}` : "Sedan ta avfarten";
+            } else {
+                subText = nextName ? `Sedan in på ${nextName}` : `Sedan mot ${endPlace || "destinationen"}`;
+            }
+        } else {
+            subText = "Sedan är du framme";
+        }
+
+        const stepDist = Math.max(20, Math.round(s.distance || 100));
+        const cumStart = cum;
+        cum += stepDist;
+        const cumEnd = cum;
+
+        processed.push({
+            mainText,
+            subText,
+            speechText,
+            iconSvg: getManeuverSvg(mType, mMod),
+            dist: stepDist,
+            cumDistStart: cumStart,
+            cumDistEnd: cumEnd
+        });
+    }
+
+    return processed;
+}
+
+function getManeuverSvg(type, modifier) {
+    if (type === "arrive") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`;
+    }
+    if (type === "roundabout" || type === "rotary") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/><polyline points="12 5 15 8 12 11"/><polyline points="19 12 16 15 13 12"/></svg>`;
+    }
+    if (modifier === "left" || modifier === "sharp left") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>`;
+    }
+    if (modifier === "right" || modifier === "sharp right") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>`;
+    }
+    if (modifier === "slight left") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 19l-4-4 4-4"/><path d="M10 15h9a3 3 0 0 0 3-3V5"/></svg>`;
+    }
+    if (modifier === "slight right" || type === "off ramp" || type === "on ramp") {
+        return `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 19l4-4-4-4"/><path d="M14 15H5a3 3 0 0 1-3-3V5"/></svg>`;
+    }
+    return `<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></svg>`;
+}
+
 function startLiveNavigation() {
     if (!currentRouteCoordinates || currentRouteCoordinates.length < 2) {
         calculateAndShowRoute("Stockholm", "Strömsholm");
@@ -1482,6 +1680,35 @@ function startLiveNavigation() {
     isNavPaused = false;
     navCoordsIndex = 0;
     lastSpokenText = "";
+
+    // Förbered alla dynamiska steg för den faktiskt beräknade rutten
+    processedRouteSteps = processRouteSteps(
+        currentRouteSteps,
+        currentRouteTotalDistance || 15000,
+        currentRouteData.start,
+        currentRouteData.end
+    );
+
+    // Sätt första steget direkt i HUD
+    if (processedRouteSteps.length > 0) {
+        const step0 = processedRouteSteps[0];
+        const dist0 = step0.dist >= 1000 ? `${(step0.dist / 1000).toFixed(1)} km` : `${step0.dist} m`;
+        const nextDistEl = document.getElementById("nav-next-dist");
+        const nextTextEl = document.getElementById("nav-next-text");
+        const turnIconEl = document.getElementById("nav-turn-icon");
+        const subBannerEl = document.getElementById("nav-sub-banner");
+        const subTextEl = document.getElementById("nav-sub-text");
+
+        if (nextDistEl) nextDistEl.innerText = dist0;
+        if (nextTextEl) nextTextEl.innerText = step0.mainText;
+        if (turnIconEl) turnIconEl.innerHTML = step0.iconSvg;
+        if (step0.subText) {
+            if (subTextEl) subTextEl.innerText = step0.subText;
+            if (subBannerEl) subBannerEl.classList.remove("hidden");
+        } else {
+            if (subBannerEl) subBannerEl.classList.add("hidden");
+        }
+    }
 
     // Skapa fordonets pulserande markör
     if (vehicleMarker) map.removeLayer(vehicleMarker);
@@ -1503,7 +1730,9 @@ function startLiveNavigation() {
     map.setView(startPt, 16, { animate: true });
 
     showToast("Live GPS-navigering startad! Max 80 km/h med hästsläp.", "🟢");
-    speakSwedishInstruction("Navigering startad. Följ den säkra rutten. Tänk på att hålla max 80 km i timmen med hästtransport.");
+    if (processedRouteSteps.length > 0) {
+        speakSwedishInstruction(`Navigering startad. ${processedRouteSteps[0].speechText}`);
+    }
 
     if (navInterval) clearInterval(navInterval);
     navInterval = setInterval(stepNavigationSimulation, 500);
@@ -1565,8 +1794,11 @@ function stepNavigationSimulation() {
 
 function updateTurnInstructionsAndStats(currentPt) {
     const totalPoints = currentRouteCoordinates.length;
-    const remainingFraction = Math.max(0, (totalPoints - navCoordsIndex) / totalPoints);
-    const remainingKm = Math.max(0.1, ((currentRouteTotalDistance || 15000) * remainingFraction / 1000)).toFixed(1);
+    const progress = Math.min(1, Math.max(0, navCoordsIndex / totalPoints));
+    const totalDistMeters = currentRouteTotalDistance || 15000;
+    const currentDistAlongRoute = progress * totalDistMeters;
+    const remainingMeters = Math.max(0, totalDistMeters - currentDistAlongRoute);
+    const remainingKm = (remainingMeters / 1000).toFixed(1);
     
     // Hästtransporthastighet ~72-78 km/h på rak väg, lägre vid svängar
     const baseSpeed = Math.floor(72 + Math.sin(navCoordsIndex * 0.3) * 6);
@@ -1581,7 +1813,7 @@ function updateTurnInstructionsAndStats(currentPt) {
     }
 
     // Beräkna ankomsttid
-    const remainingMins = Math.round((remainingKm / 75) * 60);
+    const remainingMins = Math.round((remainingMeters / 1000 / 75) * 60);
     const hrs = Math.floor(remainingMins / 60);
     const mins = remainingMins % 60;
     const timeRemainingText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
@@ -1598,67 +1830,45 @@ function updateTurnInstructionsAndStats(currentPt) {
     if (navDistEl) navDistEl.innerText = `${remainingKm} km`;
     if (navEtaEl) navEtaEl.innerText = `Ankomst ${arrivalClock}`;
 
-    // Hitta närmaste svängpunkt i steps
-    const step = getActiveManeuverStep(navCoordsIndex, totalPoints);
+    // Hitta det aktiva steget bland processedRouteSteps
+    if (!processedRouteSteps || processedRouteSteps.length === 0) {
+        processedRouteSteps = processRouteSteps(currentRouteSteps, totalDistMeters, currentRouteData.start, currentRouteData.end);
+    }
+
+    let activeStepIdx = 0;
+    for (let i = 0; i < processedRouteSteps.length; i++) {
+        if (currentDistAlongRoute <= processedRouteSteps[i].cumDistEnd) {
+            activeStepIdx = i;
+            break;
+        }
+        activeStepIdx = processedRouteSteps.length - 1;
+    }
+
+    const currentStep = processedRouteSteps[activeStepIdx];
+    const distToTurn = Math.max(20, Math.round(currentStep.cumDistEnd - currentDistAlongRoute));
+    const formattedDist = distToTurn >= 1000 ? `${(distToTurn / 1000).toFixed(1)} km` : `${Math.round(distToTurn / 10) * 10} m`;
+
     const turnIcon = document.getElementById("nav-turn-icon");
     const nextDist = document.getElementById("nav-next-dist");
     const nextText = document.getElementById("nav-next-text");
+    const subBanner = document.getElementById("nav-sub-banner");
     const subText = document.getElementById("nav-sub-text");
 
-    if (nextDist) nextDist.innerText = step.distText;
-    if (nextText) nextText.innerText = step.instruction;
-    if (subText) subText.innerText = step.subInstruction;
+    if (nextDist) nextDist.innerText = formattedDist;
+    if (nextText) nextText.innerText = currentStep.mainText;
+    if (turnIcon) turnIcon.innerHTML = currentStep.iconSvg;
 
-    if (turnIcon) {
-        turnIcon.innerHTML = step.iconSvg;
-    }
-
-    // Röstguidning vid nyckelavstånd
-    if (step.shouldSpeak && step.instruction !== lastSpokenText) {
-        lastSpokenText = step.instruction;
-        speakSwedishInstruction(step.speechText);
-    }
-}
-
-function getActiveManeuverStep(index, total) {
-    const progress = index / total;
-
-    if (progress > 0.92) {
-        return {
-            distText: "150 m",
-            instruction: "Sväng höger framme vid målet",
-            subInstruction: "Sedan är du framme vid stallet",
-            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
-            speechText: "Om 150 meter, sväng höger framme vid målet.",
-            shouldSpeak: true
-        };
-    } else if (progress > 0.65) {
-        return {
-            distText: "450 m",
-            instruction: "Ta 2:a avfarten i rondellen mot Enköping",
-            subInstruction: "Sedan fortsätt på väg 263",
-            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
-            speechText: "Om 450 meter, ta andra avfarten i rondellen.",
-            shouldSpeak: true
-        };
-    } else if (progress > 0.35) {
-        return {
-            distText: "1,2 km",
-            instruction: "Håll höger in på E18 mot Västerås",
-            subInstruction: "Sedan fortsätt 8,4 km på motorväg",
-            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
-            speechText: "Om en kilometer, håll höger in på E18. Håll max 80 med släpet.",
-            shouldSpeak: true
-        };
+    if (currentStep.subText) {
+        if (subText) subText.innerText = currentStep.subText;
+        if (subBanner) subBanner.classList.remove("hidden");
     } else {
-        return {
-            distText: "250 m",
-            instruction: "Sväng vänster in på Vibyvägen",
-            subInstruction: "Sedan Rimbo Skolväg",
-            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>',
-            speechText: "Om 250 meter, sväng vänster in på Vibyvägen.",
-            shouldSpeak: index === 1
-        };
+        if (subBanner) subBanner.classList.add("hidden");
+    }
+
+    // Röstguidning vid nytt steg
+    if (currentStep.mainText !== lastSpokenText) {
+        lastSpokenText = currentStep.mainText;
+        speakSwedishInstruction(currentStep.speechText);
     }
 }
 
@@ -1669,10 +1879,12 @@ function finishNavigation() {
     const nextText = document.getElementById("nav-next-text");
     const subText = document.getElementById("nav-sub-text");
     const nextDist = document.getElementById("nav-next-dist");
+    const subBanner = document.getElementById("nav-sub-banner");
 
     if (nextText) nextText.innerText = "Du har nått din destination! 🐎🏁";
     if (subText) subText.innerText = "Godkänd och säker parkering för hästtransport";
     if (nextDist) nextDist.innerText = "Framme";
+    if (subBanner) subBanner.classList.remove("hidden");
 
     speakSwedishInstruction("Du har nått din destination. Tack för att du kör säkert med EquiNav!");
     showToast("Du har nått din destination! 🎉", "🏁");
