@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260829_1920">
+    <link rel="stylesheet" href="index.css?v=20260829_1945">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -37,7 +37,7 @@
     -->
     <script>
     (function() {
-        var CURRENT_VERSION = 'v25-2026-08-29';
+        var CURRENT_VERSION = 'v26-2026-08-29-merge';
         var lastVersion = localStorage.getItem('equinav-sw-version');
 
         // Om versionen ändrats eller aldrig satts → rensa allt
@@ -81,6 +81,37 @@
         <main class="map-container-wrapper">
             <div id="map"></div>
             
+            <!-- Floating Map Controls (Zoom, Locate, Map Style) -->
+            <div class="map-floating-controls">
+                <button class="map-ctrl-btn" id="btn-map-locate" title="Min GPS-position">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="2" x2="12" y2="5"></line>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="5" y2="12"></line>
+                        <line x1="19" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                </button>
+                <button class="map-ctrl-btn" id="btn-map-layer" title="Byt kartvy (Gata / Satellit / Topografisk)">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </button>
+                <div class="map-zoom-group">
+                    <button class="map-ctrl-btn" id="btn-map-zoom-in" title="Zooma in">+</button>
+                    <button class="map-ctrl-btn" id="btn-map-zoom-out" title="Zooma ut">−</button>
+                </div>
+            </div>
+
+            <!-- Horse Safety Road Badge -->
+            <div class="horse-safety-badge" id="horse-safety-badge">
+                <span class="safety-icon">🐎</span>
+                <span class="safety-text">Hästtransport-optimerad rutt (Max 80 km/h)</span>
+            </div>
+
             <!-- Map Toast Warning -->
             <div id="map-toast" class="map-toast hidden">
                 <span class="toast-icon">📍</span>
@@ -446,15 +477,43 @@
                     </button>
 
                     <div class="card">
-                        <div class="form-row">
-                            <div class="form-group half">
-                                <label for="calc-car-reg">REGNR BIL</label>
-                                <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                        <!-- Search Mode Toggle -->
+                        <div class="search-mode-tabs" style="display: flex; gap: 8px; margin-bottom: 15px;">
+                            <button type="button" class="btn btn-sm btn-secondary active" id="btn-mode-reg" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--input-bg); font-weight: 600; cursor: pointer; color: var(--text-main);">🚗 Sök med Regnr</button>
+                            <button type="button" class="btn btn-sm btn-outline" id="btn-mode-model" style="flex: 1; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--card-border); background: transparent; font-weight: 600; cursor: pointer; color: var(--text-main);">🚘 Sök med Modell & År</button>
+                        </div>
+                        
+                        <!-- Mode 1: Regnr Search -->
+                        <div id="mode-reg-container">
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="calc-car-reg">REGNR BIL</label>
+                                    <input type="text" id="calc-car-reg" placeholder="T.ex. SEO345" class="uppercase-input" value="SEO345">
+                                </div>
+                                <div class="form-group half">
+                                    <label for="calc-trailer-reg">REGNR SLÄP</label>
+                                    <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                                </div>
                             </div>
-                            <div class="form-group half">
-                                <label for="calc-trailer-reg">REGNR SLÄP</label>
-                                <input type="text" id="calc-trailer-reg" placeholder="T.ex. TRL004" class="uppercase-input" value="TRL004">
+                        </div>
+
+                        <!-- Mode 2: Model & Year Search -->
+                        <div id="mode-model-container" class="hidden">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label for="calc-car-model">BILMODELL</label>
+                                    <input type="text" id="calc-car-model" placeholder="T.ex. Volvo XC90, VW Tiguan, BMW X5..." value="Volvo XC90">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label for="calc-car-year">ÅRSMODELL</label>
+                                    <input type="number" id="calc-car-year" placeholder="2020" value="2020">
+                                </div>
                             </div>
+                            <div class="form-group">
+                                <label for="calc-trailer-model">SLÄPMODELL (VALFRITT)</label>
+                                <input type="text" id="calc-trailer-model" placeholder="T.ex. Ume-släpet B50, Cheval Gold..." value="Ume-släpet B50">
+                            </div>
+                            <div id="model-search-results" class="model-results-preview" style="margin-bottom: 12px; font-size: 12px; color: var(--text-muted);"></div>
                         </div>
                         
                         <div class="form-group">
@@ -472,8 +531,8 @@
                                     <input type="radio" name="license-type" value="B" checked>
                                     <div class="license-card-box">
                                         <div class="license-card-info">
-                                            <strong>B-kort</strong>
-                                            <span>Max 3500kg</span>
+                                            <strong>B-kort (Vanligt B)</strong>
+                                            <span>Max 3500kg tågvikt</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -488,8 +547,8 @@
                                     <input type="radio" name="license-type" value="B96">
                                     <div class="license-card-box">
                                         <div class="license-card-info">
-                                            <strong>B96 (utökad)</strong>
-                                            <span>Max 4250kg</span>
+                                            <strong>B96 (Utökat B)</strong>
+                                            <span>Max 4250kg tågvikt</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -504,8 +563,24 @@
                                     <input type="radio" name="license-type" value="BE">
                                     <div class="license-card-box">
                                         <div class="license-card-info">
-                                            <strong>BE-kort</strong>
-                                            <span>Max 7000kg</span>
+                                            <strong>BE-kort (Efter 2013)</strong>
+                                            <span>Släpets totalvikt max 3500kg</span>
+                                        </div>
+                                        <div class="license-check-circle">
+                                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="9 12 11 14 15 10"></polyline>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="license-choice-card">
+                                    <input type="radio" name="license-type" value="BE_OLD">
+                                    <div class="license-card-box">
+                                        <div class="license-card-info">
+                                            <strong>BE-kort (Före 2013)</strong>
+                                            <span>Ingen maxgräns för släptotalvikt</span>
                                         </div>
                                         <div class="license-check-circle">
                                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -532,9 +607,17 @@
                         <div class="card">
                             <h4 style="font-size: 15px; margin-bottom: 8px;">Tekniska specifikationer</h4>
                             <div style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
-                                <div>Dragbil tjänstevikt: <strong id="val-car-curb" style="color: var(--text-main);">1650 kg</strong></div>
-                                <div>Släpvagn totalvikt: <strong id="val-trailer-total" style="color: var(--text-main);">1400 kg</strong></div>
-                                <div>Total tågvikt: <strong id="val-train-weight" style="color: var(--primary-green);">3050 kg</strong></div>
+                                <div>Dragbil: <strong id="val-car-name" style="color: var(--text-main);">Volvo XC90</strong></div>
+                                <div>Dragbil tjänstevikt / totalvikt: <strong id="val-car-curb" style="color: var(--text-main);">2130 kg</strong> / <strong id="val-car-total" style="color: var(--text-main);">2750 kg</strong></div>
+                                <div>Bilens max dragvikt: <strong id="val-car-maxtow" style="color: var(--text-main);">2700 kg</strong></div>
+                                <hr style="border: none; border-top: 1px solid var(--card-border); margin: 8px 0;">
+                                <div>Släpvagn: <strong id="val-trailer-name" style="color: var(--text-main);">Ume-släpet B50</strong></div>
+                                <div>Släp tjänstevikt / totalvikt: <strong id="val-trailer-curb" style="color: var(--text-main);">820 kg</strong> / <strong id="val-trailer-total" style="color: var(--text-main);">1990 kg</strong></div>
+                                <div>Max tillåten last i släp: <strong id="val-trailer-maxload" style="color: var(--text-main);">1170 kg</strong></div>
+                                <div>Faktisk lastad släpvikt (Släp + Häst): <strong id="val-actual-trailer-weight" style="color: var(--text-main);">1420 kg</strong></div>
+                                <hr style="border: none; border-top: 1px solid var(--card-border); margin: 8px 0;">
+                                <div>Total sammanlagd tågvikt: <strong id="val-train-weight" style="color: var(--primary-green);">4740 kg</strong></div>
+                                <div>Körkortsgräns: <strong id="val-license-limit" style="color: var(--text-main);">Max 3500 kg</strong></div>
                             </div>
                         </div>
                     </div>
@@ -875,10 +958,10 @@
         <!-- ========================================== -->
         <div id="navigation-hud" class="navigation-hud hidden">
             <!-- Top Dark Green Turn-by-Turn Banner -->
-            <div>
+            <div class="nav-top-wrapper">
                 <div class="nav-top-banner">
-                    <div class="nav-turn-icon">
-                        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor">
+                    <div class="nav-turn-icon" id="nav-turn-icon">
+                        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" id="svg-nav-turn">
                             <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
                         </svg>
                     </div>
@@ -892,7 +975,7 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                         <path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/>
                     </svg>
-                    <span>Sedan Rimbo Skolväg</span>
+                    <span id="nav-sub-text">Sedan Rimbo Skolväg</span>
                 </div>
             </div>
 
@@ -901,15 +984,29 @@
                 <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder">
                     <span>⚠️</span>
                 </button>
-                <button class="nav-action-btn" id="btn-nav-voice" title="Röstguidning">
-                    <span>🔊</span>
+                <button class="nav-action-btn active" id="btn-nav-voice" title="Röstguidning på/av">
+                    <span id="icon-nav-voice">🔊</span>
+                </button>
+                <button class="nav-action-btn" id="btn-nav-recenter" title="Centrera på ekipaget">
+                    <span>🎯</span>
                 </button>
             </div>
 
             <!-- Speed Limit & Current Speed Overlay -->
             <div class="nav-speed-overlay">
-                <div class="nav-speed-limit-circle">80</div>
-                <div class="nav-current-speed-pill">74 km/h</div>
+                <div class="nav-speed-limit-circle" title="Svensk maxgräns för hästtransport">80</div>
+                <div class="nav-current-speed-pill" id="nav-current-speed">74 km/h</div>
+            </div>
+
+            <!-- Simulation Controls (Pausa, Hastighet 1x / 3x / 8x) -->
+            <div class="nav-sim-controls">
+                <button class="btn-sim-control" id="btn-sim-play-pause" title="Pausa / Återuppta simulering">
+                    <span id="sim-play-icon">⏸️</span>
+                    <span id="sim-play-text">Paus</span>
+                </button>
+                <button class="btn-sim-control" id="btn-sim-speed-btn" data-speed="1" title="Ändra simuleringshastighet">
+                    <span>⚡ 1x</span>
+                </button>
             </div>
 
             <!-- Bottom Floating Card -->
@@ -984,9 +1081,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App Database layer -->
-    <script src="db.js?v=20260829_1920"></script>
+    <script src="db.js?v=20260829_1945"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260829_1920"></script>
+    <script src="app.js?v=20260829_1945"></script>
 </body>
 </html>

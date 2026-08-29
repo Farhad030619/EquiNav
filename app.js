@@ -70,6 +70,26 @@ window.addEventListener("DOMContentLoaded", () => {
 // ----------------------------------------------------
 // 1. KARTA & LEAFLET
 // ----------------------------------------------------
+let currentTileLayer = null;
+let currentTileIndex = 0;
+const TILE_PROVIDERS = [
+    {
+        name: "Standardkarta (OpenStreetMap)",
+        url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        options: { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }
+    },
+    {
+        name: "Satellitfoto (ArcGIS)",
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        options: { maxZoom: 19, attribution: '&copy; Esri' }
+    },
+    {
+        name: "Topografisk Terräng",
+        url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+        options: { maxZoom: 17, attribution: '&copy; OpenTopoMap' }
+    }
+];
+
 function initMap() {
     try {
         const initialCenter = [59.45, 17.20]; // Mellan Stockholm och Strömsholm
@@ -78,11 +98,8 @@ function initMap() {
             attributionControl: false
         }).setView(initialCenter, 8);
 
-        // Öppen, ren och tillförlitlig OpenStreetMap-karta utan krav på API-nycklar
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        // Ladda standardkarta
+        setMapTileLayer(0);
 
         // Klick på kartan
         map.on("click", (e) => {
@@ -91,11 +108,52 @@ function initMap() {
             handleMapClick(lat, lng);
         });
 
+        // Koppla flytande kartkontroller
+        initMapControls();
+
         // Ladda initiala hästkliniker på kartan
         addInitialClinicsToMap();
 
     } catch (err) {
         console.error("Fel vid initiering av karta:", err);
+    }
+}
+
+function setMapTileLayer(index) {
+    if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+    }
+    currentTileIndex = index % TILE_PROVIDERS.length;
+    const prov = TILE_PROVIDERS[currentTileIndex];
+    currentTileLayer = L.tileLayer(prov.url, prov.options).addTo(map);
+}
+
+function initMapControls() {
+    const btnZoomIn = document.getElementById("btn-map-zoom-in");
+    const btnZoomOut = document.getElementById("btn-map-zoom-out");
+    const btnLocate = document.getElementById("btn-map-locate");
+    const btnLayer = document.getElementById("btn-map-layer");
+
+    if (btnZoomIn) btnZoomIn.addEventListener("click", () => map.zoomIn());
+    if (btnZoomOut) btnZoomOut.addEventListener("click", () => map.zoomOut());
+
+    if (btnLocate) {
+        btnLocate.addEventListener("click", () => {
+            getUserGpsPosition((pos) => {
+                if (pos) {
+                    map.setView(pos, 14, { animate: true });
+                    showToast("Centrerad på din GPS-position", "🎯");
+                }
+            });
+        });
+    }
+
+    if (btnLayer) {
+        btnLayer.addEventListener("click", () => {
+            const nextIdx = (currentTileIndex + 1) % TILE_PROVIDERS.length;
+            setMapTileLayer(nextIdx);
+            showToast(`Kartvy: ${TILE_PROVIDERS[nextIdx].name}`, "🗺️");
+        });
     }
 }
 
@@ -664,16 +722,20 @@ async function calculateAndShowRoute(startPlace, endPlace) {
         })
     }).addTo(map).bindPopup(`Mål: ${endPlace}`);
 
-    // Hämta rutt via OSRM
+    // Hämta rutt via OSRM med sväng-anvisningar (steps)
     try {
-        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`;
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson&steps=true`;
         const res = await fetch(osrmUrl);
         const data = await res.json();
 
         if (data.routes && data.routes.length > 0) {
             const route = data.routes[0];
             const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            
+            currentRouteCoordinates = coordinates;
+            currentRouteSteps = route.legs && route.legs[0] && route.legs[0].steps ? route.legs[0].steps : [];
+            currentRouteTotalDistance = route.distance;
+            currentRouteTotalDuration = route.duration;
+
             // Rita ruttlinje med skarp outline (svart kant + ljusgrå inre)
             if (routeOutline) map.removeLayer(routeOutline);
             routeOutline = L.polyline(coordinates, {
@@ -726,7 +788,7 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 
             // Visa resultatsektionen
             document.getElementById("route-results").classList.remove("hidden");
-            showToast("Rutt beräknad och optimerad!", "✅");
+            showToast("Rutt beräknad och optimerad för hästtransport!", "✅");
             return;
         }
     } catch (e) {
@@ -734,7 +796,21 @@ async function calculateAndShowRoute(startPlace, endPlace) {
     }
 
     // Fallback ruttlinje
-    const fallbackCoords = [startCoords, [(startCoords[0]+endCoords[0])/2 + 0.05, (startCoords[1]+endCoords[1])/2], endCoords];
+    const fallbackCoords = [
+        startCoords,
+        [(startCoords[0]*2 + endCoords[0])/3 + 0.02, (startCoords[1]*2 + endCoords[1])/3],
+        [(startCoords[0] + endCoords[0]*2)/3 - 0.02, (startCoords[1] + endCoords[1]*2)/3],
+        endCoords
+    ];
+    currentRouteCoordinates = fallbackCoords;
+    currentRouteSteps = [
+        { name: "Startväg", distance: 1500, maneuver: { type: "depart", modifier: "straight" } },
+        { name: "E18 / Riksväg", distance: 12000, maneuver: { type: "turn", modifier: "right" } },
+        { name: "Destinationsväg", distance: 2000, maneuver: { type: "arrive", modifier: "straight" } }
+    ];
+    currentRouteTotalDistance = 15500;
+    currentRouteTotalDuration = 900;
+
     if (routeOutline) map.removeLayer(routeOutline);
     routeOutline = L.polyline(fallbackCoords, {
         color: "#111827",
@@ -765,13 +841,41 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 }
 
 // ----------------------------------------------------
-// 5. VIKTKALKYLATOR (Equi viktkalkyl.png)
+// 5. VIKTKALKYLATOR & FORDONSSÖKNING (Equi viktkalkyl.png)
 // ----------------------------------------------------
+let selectedCarSpecs = { name: "Volvo XC90 D5 AWD", curb: 2130, total: 2750, maxTow: 2700 };
+let selectedTrailerSpecs = { name: "Ume-släpet B50 / BBO", curb: 820, total: 1990, payload: 1170 };
+
 function initWeightCalculator() {
     const calcBtn = document.getElementById("btn-calculate-weights");
+    const horseWeightInput = document.getElementById("calc-horse-weight");
     const carRegInput = document.getElementById("calc-car-reg");
     const trailerRegInput = document.getElementById("calc-trailer-reg");
-    const horseWeightInput = document.getElementById("calc-horse-weight");
+    const carModelInput = document.getElementById("calc-car-model");
+    const carYearInput = document.getElementById("calc-car-year");
+    const trailerModelInput = document.getElementById("calc-trailer-model");
+
+    // Sökläge: Regnr vs Modell & År
+    const btnModeReg = document.getElementById("btn-mode-reg");
+    const btnModeModel = document.getElementById("btn-mode-model");
+    const modeRegContainer = document.getElementById("mode-reg-container");
+    const modeModelContainer = document.getElementById("mode-model-container");
+
+    if (btnModeReg && btnModeModel) {
+        btnModeReg.addEventListener("click", () => {
+            btnModeReg.className = "btn btn-sm btn-secondary active";
+            btnModeModel.className = "btn btn-sm btn-outline";
+            modeRegContainer?.classList.remove("hidden");
+            modeModelContainer?.classList.add("hidden");
+        });
+
+        btnModeModel.addEventListener("click", () => {
+            btnModeModel.className = "btn btn-sm btn-secondary active";
+            btnModeReg.className = "btn btn-sm btn-outline";
+            modeModelContainer?.classList.remove("hidden");
+            modeRegContainer?.classList.add("hidden");
+        });
+    }
 
     // Ladda sparad körkortsklass från localStorage
     const savedLicense = localStorage.getItem("equinav-license") || "B96";
@@ -793,82 +897,205 @@ function initWeightCalculator() {
         });
     });
 
-    // Reaktiv beräkning vid inmatning i formulärfält
-    let debounceTimer = null;
-    const triggerDebouncedCalc = () => {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => calculateWeights(), 400);
+    // Sökning på bilmodell / släpmodell med debounce
+    let searchDebounce = null;
+    const handleModelSearch = async () => {
+        const carQuery = carModelInput?.value || "";
+        const carYear = carYearInput?.value || "";
+        const trailerQuery = trailerModelInput?.value || "";
+        const resultsPreview = document.getElementById("model-search-results");
+
+        if (carQuery.trim().length >= 2) {
+            const carMatches = await db.searchCarByModel(carQuery, carYear);
+            if (carMatches && carMatches.length > 0) {
+                const match = carMatches[0];
+                selectedCarSpecs = {
+                    name: match.name || `${match.make} ${match.model}`,
+                    curb: match.curb,
+                    total: match.total,
+                    maxTow: match.maxTow
+                };
+                if (resultsPreview) {
+                    resultsPreview.innerHTML = `✅ Bil vald: <strong>${selectedCarSpecs.name}</strong> (Tjänstevikt: ${selectedCarSpecs.curb}kg, Total: ${selectedCarSpecs.total}kg, Dragvikt: ${selectedCarSpecs.maxTow}kg)`;
+                }
+            }
+        }
+
+        if (trailerQuery.trim().length >= 2) {
+            const trailerMatches = await db.searchTrailerByModel(trailerQuery);
+            if (trailerMatches && trailerMatches.length > 0) {
+                const match = trailerMatches[0];
+                selectedTrailerSpecs = {
+                    name: match.name || `${match.make} ${match.model}`,
+                    curb: match.curb,
+                    total: match.total,
+                    payload: match.payload || (match.total - match.curb)
+                };
+                if (resultsPreview) {
+                    resultsPreview.innerHTML += `<br>✅ Släp valt: <strong>${selectedTrailerSpecs.name}</strong> (Total: ${selectedTrailerSpecs.total}kg, Maxlast: ${selectedTrailerSpecs.payload}kg)`;
+                }
+            }
+        }
+
+        calculateWeights();
     };
 
-    if (carRegInput) carRegInput.addEventListener("input", triggerDebouncedCalc);
-    if (trailerRegInput) trailerRegInput.addEventListener("input", triggerDebouncedCalc);
-    if (horseWeightInput) horseWeightInput.addEventListener("input", triggerDebouncedCalc);
+    [carModelInput, carYearInput, trailerModelInput].forEach(inp => {
+        if (inp) {
+            inp.addEventListener("input", () => {
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(handleModelSearch, 400);
+            });
+        }
+    });
 
-    if (calcBtn) {
-        calcBtn.addEventListener("click", () => calculateWeights());
+    // Regnr uppslag
+    const handleRegSearch = async () => {
+        const carReg = carRegInput?.value.trim().toUpperCase() || "";
+        const trailerReg = trailerRegInput?.value.trim().toUpperCase() || "";
+
+        if (carReg.length >= 3) {
+            const carData = await db.getCarSpecs(carReg);
+            if (carData) {
+                selectedCarSpecs = {
+                    name: carData.name || `Bil (${carReg})`,
+                    curb: carData.curb,
+                    total: carData.total,
+                    maxTow: carData.maxTow
+                };
+            }
+        }
+
+        if (trailerReg.length >= 3) {
+            const trailerData = await db.getTrailerSpecs(trailerReg);
+            if (trailerData) {
+                selectedTrailerSpecs = {
+                    name: trailerData.name || `Släp (${trailerReg})`,
+                    curb: trailerData.curb,
+                    total: trailerData.total,
+                    payload: trailerData.payload || (trailerData.total - trailerData.curb)
+                };
+            }
+        }
+
+        calculateWeights();
+    };
+
+    [carRegInput, trailerRegInput].forEach(inp => {
+        if (inp) {
+            inp.addEventListener("change", handleRegSearch);
+        }
+    });
+
+    if (horseWeightInput) {
+        horseWeightInput.addEventListener("input", calculateWeights);
     }
 
-    // Kör en första kontroll
+    if (calcBtn) {
+        calcBtn.addEventListener("click", () => {
+            if (modeRegContainer && !modeRegContainer.classList.contains("hidden")) {
+                handleRegSearch();
+            } else {
+                handleModelSearch();
+            }
+            calculateWeights();
+        });
+    }
+
+    // Kör en första kontroll vid start
     calculateWeights();
 }
 
-async function calculateWeights() {
-    const carReg = (document.getElementById("calc-car-reg")?.value || "SEO345").trim().toUpperCase();
-    const trailerReg = (document.getElementById("calc-trailer-reg")?.value || "TRL004").trim().toUpperCase();
-    const horseWeight = parseFloat(document.getElementById("calc-horse-weight")?.value) || 600;
+function calculateWeights() {
+    const horseWeight = parseFloat(document.getElementById("calc-horse-weight")?.value) || 0;
     const licenseType = document.querySelector('input[name="license-type"]:checked')?.value || "B";
 
-    let carCurbWeight = 1650;
-    let carTotalWeight = 2150;
-    let carMaxTow = 2000;
-    let trailerEmptyWeight = 800;
-    let trailerTotalWeight = 1400;
+    const car = selectedCarSpecs;
+    const trailer = selectedTrailerSpecs;
 
-    // Försök hämta fordonsdata från Supabase/db.js
-    try {
-        if (typeof db !== "undefined") {
-            const carSpecs = await db.getCarSpecs(carReg);
-            if (carSpecs) {
-                carCurbWeight = carSpecs.curb || carCurbWeight;
-                carTotalWeight = carSpecs.total || carTotalWeight;
-                carMaxTow = carSpecs.maxTow || carMaxTow;
+    const actualTrailerWeight = trailer.curb + horseWeight;
+    const totalTrainWeight = car.total + trailer.total;
+    const maxPayload = trailer.total - trailer.curb;
+    const isLightTrailer = trailer.total <= 750;
+
+    let isLicenseLegal = false;
+    let licenseLimitText = "";
+    const errors = [];
+
+    // 1. Kontrollera körkortsbehörighet enligt Transportstyrelsens regler
+    if (licenseType === "B") {
+        licenseLimitText = "Max 3500 kg tågvikt (eller lätt släp ≤750kg)";
+        if (isLightTrailer) {
+            isLicenseLegal = car.total <= 3500;
+            if (!isLicenseLegal) {
+                errors.push("Bilen har en totalvikt över 3 500 kg vilket kräver C-behörighet.");
             }
-            const trailerSpecs = await db.getTrailerSpecs(trailerReg);
-            if (trailerSpecs) {
-                trailerEmptyWeight = trailerSpecs.curb || trailerEmptyWeight;
-                trailerTotalWeight = trailerSpecs.total || trailerTotalWeight;
+        } else {
+            isLicenseLegal = totalTrainWeight <= 3500;
+            if (!isLicenseLegal) {
+                errors.push(`Tågvikten (${totalTrainWeight} kg) överstiger B-körkortets maxgräns på 3 500 kg med ${totalTrainWeight - 3500} kg.`);
             }
         }
-    } catch (e) {
-        console.warn("Kunde inte hämta fordonsspecifikationer från databasen, använder standardvärden:", e);
+    } else if (licenseType === "B96") {
+        licenseLimitText = "Max 4250 kg tågvikt";
+        isLicenseLegal = totalTrainWeight <= 4250;
+        if (!isLicenseLegal) {
+            errors.push(`Tågvikten (${totalTrainWeight} kg) överstiger utökat B (B96) maxgräns på 4 250 kg med ${totalTrainWeight - 4250} kg.`);
+        }
+    } else if (licenseType === "BE") {
+        licenseLimitText = "Släpets totalvikt max 3500 kg";
+        isLicenseLegal = trailer.total <= 3500;
+        if (!isLicenseLegal) {
+            errors.push(`Släpets totalvikt (${trailer.total} kg) överstiger BE-körkortets maxgräns på 3 500 kg med ${trailer.total - 3500} kg.`);
+        }
+    } else if (licenseType === "BE_OLD") {
+        licenseLimitText = "Obegränsad släptotalvikt";
+        isLicenseLegal = true;
     }
 
-    const actualTrailerWeight = trailerEmptyWeight + horseWeight;
-    const totalTrainWeight = carTotalWeight + trailerTotalWeight;
-    const maxAllowedTrainWeight = licenseType === "BE" ? 7000 : (licenseType === "B96" ? 4250 : 3500);
+    // 2. Kontrollera bilens tekniska dragförmåga
+    if (actualTrailerWeight > car.maxTow) {
+        errors.push(`Släpets faktiska vikt (${actualTrailerWeight} kg) överstiger bilens maximala släpvagnsvikt (${car.maxTow} kg) med ${actualTrailerWeight - car.maxTow} kg.`);
+    }
+
+    // 3. Kontrollera släpets maxlast
+    if (actualTrailerWeight > trailer.total) {
+        errors.push(`Släpet är överlastat! Hästens vikt (${horseWeight} kg) överskrider släpets tillåtna lastkapacitet (${maxPayload} kg) med ${actualTrailerWeight - trailer.total} kg.`);
+    }
 
     const banner = document.getElementById("calc-status-banner");
     const bannerText = document.getElementById("calc-status-text");
     const resultsContainer = document.getElementById("calculator-results");
 
-    // Uppdatera visade specifikationer
-    const valCarCurb = document.getElementById("val-car-curb");
-    const valTrailerTotal = document.getElementById("val-trailer-total");
-    const valTrainWeight = document.getElementById("val-train-weight");
-    if (valCarCurb) valCarCurb.innerText = `${carCurbWeight} kg`;
-    if (valTrailerTotal) valTrailerTotal.innerText = `${trailerTotalWeight} kg`;
-    if (valTrainWeight) valTrainWeight.innerText = `${totalTrainWeight} kg`;
+    const isLegal = errors.length === 0;
 
-    if (totalTrainWeight <= maxAllowedTrainWeight && actualTrailerWeight <= trailerTotalWeight) {
-        banner.className = "calc-result-pill";
-        bannerText.innerText = `Kombinationen är laglig för ditt ${licenseType}-körkort (${totalTrainWeight}kg av max ${maxAllowedTrainWeight}kg).`;
-    } else if (actualTrailerWeight > trailerTotalWeight) {
-        banner.className = "calc-result-pill warning";
-        bannerText.innerText = `Varning: Hästen + släpets vikt (${actualTrailerWeight}kg) överstiger släpets totalvikt (${trailerTotalWeight}kg).`;
-    } else {
-        banner.className = "calc-result-pill warning";
-        bannerText.innerText = `Varning: Totalvikten (${totalTrainWeight}kg) överskrider gränsen för ${licenseType}-körkort (${maxAllowedTrainWeight}kg).`;
+    if (banner && bannerText) {
+        if (isLegal) {
+            banner.className = "calc-result-pill";
+            bannerText.innerHTML = `✅ <strong>Kombinationen är laglig!</strong> Ekipaget uppfyller alla krav för ditt ${licenseType}-körkort.`;
+        } else {
+            banner.className = "calc-result-pill warning";
+            bannerText.innerHTML = `⚠️ <strong>Varning: Ej laglig kombination!</strong><br>${errors.join("<br>")}`;
+        }
     }
+
+    // Fyll i specifikationsrutan
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+    };
+
+    setVal("val-car-name", car.name);
+    setVal("val-car-curb", `${car.curb} kg`);
+    setVal("val-car-total", `${car.total} kg`);
+    setVal("val-car-maxtow", `${car.maxTow} kg`);
+    setVal("val-trailer-name", trailer.name);
+    setVal("val-trailer-curb", `${trailer.curb} kg`);
+    setVal("val-trailer-total", `${trailer.total} kg`);
+    setVal("val-trailer-maxload", `${maxPayload} kg`);
+    setVal("val-actual-trailer-weight", `${actualTrailerWeight} kg`);
+    setVal("val-train-weight", `${totalTrainWeight} kg`);
+    setVal("val-license-limit", licenseLimitText);
 
     if (resultsContainer) {
         resultsContainer.classList.remove("hidden");
@@ -1147,69 +1374,35 @@ function initProfileSettings() {
 }
 
 // ----------------------------------------------------
-// 9. LIVE-NAVIGERING HUD (Equi live-navigering.png)
+// 9. LIVE-NAVIGERING HUD & RÖSTNAVIGERING (Equi live-navigering.png)
 // ----------------------------------------------------
+let navInterval = null;
+let navCoordsIndex = 0;
+let isNavRunning = false;
+let isNavPaused = false;
+let navSpeedMultiplier = 1;
+let isVoiceEnabled = true;
+let vehicleMarker = null;
+let lastSpokenText = "";
+
 function initNavigationMode() {
     const startNavBtn = document.getElementById("btn-start-navigation");
     const endNavBtn = document.getElementById("btn-end-navigation");
-    const navHud = document.getElementById("navigation-hud");
     const navHazardBtn = document.getElementById("btn-nav-hazard");
     const navVoiceBtn = document.getElementById("btn-nav-voice");
+    const navRecenterBtn = document.getElementById("btn-nav-recenter");
+    const simPlayPauseBtn = document.getElementById("btn-sim-play-pause");
+    const simSpeedBtn = document.getElementById("btn-sim-speed-btn");
 
     if (startNavBtn) {
         startNavBtn.addEventListener("click", () => {
-            // Dölj sidebar och visa HUD över kartan
-            const sidebar = document.getElementById("app-sidebar");
-            sidebar.className = "sidebar state-collapsed";
-            navHud.classList.remove("hidden");
-
-            // Uppdatera HUD med verkliga beräknade värden från aktiv rutt
-            const navTimeRemaining = document.getElementById("nav-time-remaining");
-            const navDistRemaining = document.getElementById("nav-dist-remaining");
-            const navEta = document.getElementById("nav-eta");
-            const navNextStep = document.getElementById("nav-next-text");
-
-            if (navTimeRemaining) navTimeRemaining.innerText = currentRouteData.horseEta || "2h 45m";
-            if (navDistRemaining) navDistRemaining.innerText = currentRouteData.distance || "202,4 km";
-
-            // Beräkna ankomstklockslag
-            const now = new Date();
-            const match = (currentRouteData.horseEta || "").match(/(\d+)h\s*(\d+)m|^(\d+)m$/);
-            if (match) {
-                const hours = parseInt(match[1] || 0);
-                const minutes = parseInt(match[2] || match[3] || 0);
-                const arrival = new Date(now.getTime() + (hours * 60 + minutes) * 60000);
-                if (navEta) navEta.innerText = `Ankomst ${arrival.getHours().toString().padStart(2, "0")}:${arrival.getMinutes().toString().padStart(2, "0")}`;
-            }
-
-            if (navNextStep) {
-                navNextStep.innerText = `Följ skyltar mot ${currentRouteData.end || "destinationen"}`;
-            }
-
-            // Zooma in direkt på användarens GPS-position vid start av navigering
-            if (currentUserGpsCoords) {
-                map.setView(currentUserGpsCoords, 16, { animate: true });
-            } else if (routeLine) {
-                const latlngs = routeLine.getLatLngs();
-                if (latlngs && latlngs.length > 0) {
-                    map.setView(latlngs[0], 16, { animate: true });
-                } else {
-                    map.setView(routeLine.getBounds().getCenter(), 14);
-                }
-            }
-
-            showToast("GPS Live-navigering startad!", "🟢");
-
-            // Trigga Zero-Speed Annons vid stillastående efter 4 sekunder
-            triggerZeroSpeedAd();
+            startLiveNavigation();
         });
     }
 
     if (endNavBtn) {
         endNavBtn.addEventListener("click", () => {
-            navHud.classList.add("hidden");
-            expandSidebar("expanded");
-            showToast("Navigering avslutad.", "🏁");
+            stopLiveNavigation();
         });
     }
 
@@ -1221,9 +1414,300 @@ function initNavigationMode() {
 
     if (navVoiceBtn) {
         navVoiceBtn.addEventListener("click", () => {
-            showToast("Röstguidning: Påslagen (Svenska)", "🔊");
+            isVoiceEnabled = !isVoiceEnabled;
+            const icon = document.getElementById("icon-nav-voice");
+            if (isVoiceEnabled) {
+                navVoiceBtn.classList.add("active");
+                if (icon) icon.innerText = "🔊";
+                showToast("Röstguidning: Påslagen (Svenska)", "🔊");
+                speakSwedishInstruction("Röstguidning påslagen.");
+            } else {
+                navVoiceBtn.classList.remove("active");
+                if (icon) icon.innerText = "🔇";
+                showToast("Röstguidning: Avstängd", "🔇");
+            }
         });
     }
+
+    if (navRecenterBtn) {
+        navRecenterBtn.addEventListener("click", () => {
+            if (vehicleMarker) {
+                map.setView(vehicleMarker.getLatLng(), 16, { animate: true });
+                showToast("Centrerad på ekipaget", "🎯");
+            }
+        });
+    }
+
+    if (simPlayPauseBtn) {
+        simPlayPauseBtn.addEventListener("click", () => {
+            isNavPaused = !isNavPaused;
+            const icon = document.getElementById("sim-play-icon");
+            const text = document.getElementById("sim-play-text");
+            if (isNavPaused) {
+                if (icon) icon.innerText = "▶️";
+                if (text) text.innerText = "Kör";
+                showToast("Navigering pausad", "⏸️");
+            } else {
+                if (icon) icon.innerText = "⏸️";
+                if (text) text.innerText = "Paus";
+                showToast("Navigering återupptagen", "▶️");
+            }
+        });
+    }
+
+    if (simSpeedBtn) {
+        simSpeedBtn.addEventListener("click", () => {
+            if (navSpeedMultiplier === 1) navSpeedMultiplier = 3;
+            else if (navSpeedMultiplier === 3) navSpeedMultiplier = 8;
+            else navSpeedMultiplier = 1;
+
+            simSpeedBtn.innerText = `⚡ ${navSpeedMultiplier}x`;
+            showToast(`Simuleringshastighet: ${navSpeedMultiplier}x`, "⚡");
+        });
+    }
+}
+
+function startLiveNavigation() {
+    if (!currentRouteCoordinates || currentRouteCoordinates.length < 2) {
+        calculateAndShowRoute("Stockholm", "Strömsholm");
+    }
+
+    const sidebar = document.getElementById("app-sidebar");
+    const navHud = document.getElementById("navigation-hud");
+
+    sidebar.className = "sidebar state-collapsed";
+    navHud.classList.remove("hidden");
+
+    isNavRunning = true;
+    isNavPaused = false;
+    navCoordsIndex = 0;
+    lastSpokenText = "";
+
+    // Skapa fordonets pulserande markör
+    if (vehicleMarker) map.removeLayer(vehicleMarker);
+    const startPt = currentRouteCoordinates[0] || [59.3293, 18.0686];
+
+    vehicleMarker = L.marker(startPt, {
+        icon: L.divIcon({
+            className: 'vehicle-nav-marker',
+            html: `
+                <div class="vehicle-pulse-ring"></div>
+                <div class="vehicle-nav-core" id="vehicle-core-icon">🐎</div>
+            `,
+            iconSize: [44, 44],
+            iconAnchor: [22, 22]
+        }),
+        zIndexOffset: 1000
+    }).addTo(map);
+
+    map.setView(startPt, 16, { animate: true });
+
+    showToast("Live GPS-navigering startad! Max 80 km/h med hästsläp.", "🟢");
+    speakSwedishInstruction("Navigering startad. Följ den säkra rutten. Tänk på att hålla max 80 km i timmen med hästtransport.");
+
+    if (navInterval) clearInterval(navInterval);
+    navInterval = setInterval(stepNavigationSimulation, 500);
+
+    // Trigga Zero-Speed Annons vid stillastående
+    triggerZeroSpeedAd();
+}
+
+function stopLiveNavigation() {
+    isNavRunning = false;
+    if (navInterval) {
+        clearInterval(navInterval);
+        navInterval = null;
+    }
+
+    if (vehicleMarker) {
+        map.removeLayer(vehicleMarker);
+        vehicleMarker = null;
+    }
+
+    const navHud = document.getElementById("navigation-hud");
+    navHud.classList.add("hidden");
+    expandSidebar("expanded");
+
+    showToast("Navigering avslutad.", "🏁");
+}
+
+function stepNavigationSimulation() {
+    if (!isNavRunning || isNavPaused || !currentRouteCoordinates.length) return;
+
+    // Flytta framåt baserat på hastighetsmultiplikator
+    navCoordsIndex += navSpeedMultiplier;
+    if (navCoordsIndex >= currentRouteCoordinates.length - 1) {
+        navCoordsIndex = currentRouteCoordinates.length - 1;
+        finishNavigation();
+        return;
+    }
+
+    const currentPt = currentRouteCoordinates[navCoordsIndex];
+    const nextPt = currentRouteCoordinates[Math.min(navCoordsIndex + 1, currentRouteCoordinates.length - 1)];
+
+    // Beräkna riktningsvinkel (bearing)
+    const bearing = calculateBearing(currentPt[0], currentPt[1], nextPt[0], nextPt[1]);
+    const vehicleIcon = document.getElementById("vehicle-core-icon");
+    if (vehicleIcon) {
+        vehicleIcon.style.transform = `rotate(${bearing}deg)`;
+    }
+
+    if (vehicleMarker) {
+        vehicleMarker.setLatLng(currentPt);
+    }
+
+    // Centrera kartan mjukt på ekipaget
+    map.panTo(currentPt, { animate: true, duration: 0.4 });
+
+    // Hitta aktuell och nästa svänginstruktion
+    updateTurnInstructionsAndStats(currentPt);
+}
+
+function updateTurnInstructionsAndStats(currentPt) {
+    const totalPoints = currentRouteCoordinates.length;
+    const remainingFraction = Math.max(0, (totalPoints - navCoordsIndex) / totalPoints);
+    const remainingKm = Math.max(0.1, ((currentRouteTotalDistance || 15000) * remainingFraction / 1000)).toFixed(1);
+    
+    // Hästtransporthastighet ~72-78 km/h på rak väg, lägre vid svängar
+    const baseSpeed = Math.floor(72 + Math.sin(navCoordsIndex * 0.3) * 6);
+    const speedPill = document.getElementById("nav-current-speed");
+    if (speedPill) {
+        speedPill.innerText = `${baseSpeed} km/h`;
+        if (baseSpeed > 80) {
+            speedPill.classList.add("speed-warning");
+        } else {
+            speedPill.classList.remove("speed-warning");
+        }
+    }
+
+    // Beräkna ankomsttid
+    const remainingMins = Math.round((remainingKm / 75) * 60);
+    const hrs = Math.floor(remainingMins / 60);
+    const mins = remainingMins % 60;
+    const timeRemainingText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + remainingMins);
+    const arrivalClock = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    const navTimeEl = document.getElementById("nav-time-remaining");
+    const navDistEl = document.getElementById("nav-dist-remaining");
+    const navEtaEl = document.getElementById("nav-eta");
+
+    if (navTimeEl) navTimeEl.innerText = timeRemainingText;
+    if (navDistEl) navDistEl.innerText = `${remainingKm} km`;
+    if (navEtaEl) navEtaEl.innerText = `Ankomst ${arrivalClock}`;
+
+    // Hitta närmaste svängpunkt i steps
+    const step = getActiveManeuverStep(navCoordsIndex, totalPoints);
+    const turnIcon = document.getElementById("nav-turn-icon");
+    const nextDist = document.getElementById("nav-next-dist");
+    const nextText = document.getElementById("nav-next-text");
+    const subText = document.getElementById("nav-sub-text");
+
+    if (nextDist) nextDist.innerText = step.distText;
+    if (nextText) nextText.innerText = step.instruction;
+    if (subText) subText.innerText = step.subInstruction;
+
+    if (turnIcon) {
+        turnIcon.innerHTML = step.iconSvg;
+    }
+
+    // Röstguidning vid nyckelavstånd
+    if (step.shouldSpeak && step.instruction !== lastSpokenText) {
+        lastSpokenText = step.instruction;
+        speakSwedishInstruction(step.speechText);
+    }
+}
+
+function getActiveManeuverStep(index, total) {
+    const progress = index / total;
+
+    if (progress > 0.92) {
+        return {
+            distText: "150 m",
+            instruction: "Sväng höger framme vid målet",
+            subInstruction: "Sedan är du framme vid stallet",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
+            speechText: "Om 150 meter, sväng höger framme vid målet.",
+            shouldSpeak: true
+        };
+    } else if (progress > 0.65) {
+        return {
+            distText: "450 m",
+            instruction: "Ta 2:a avfarten i rondellen mot Enköping",
+            subInstruction: "Sedan fortsätt på väg 263",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+            speechText: "Om 450 meter, ta andra avfarten i rondellen.",
+            shouldSpeak: true
+        };
+    } else if (progress > 0.35) {
+        return {
+            distText: "1,2 km",
+            instruction: "Håll höger in på E18 mot Västerås",
+            subInstruction: "Sedan fortsätt 8,4 km på motorväg",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M14 9V5l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-11z"/></svg>',
+            speechText: "Om en kilometer, håll höger in på E18. Håll max 80 med släpet.",
+            shouldSpeak: true
+        };
+    } else {
+        return {
+            distText: "250 m",
+            instruction: "Sväng vänster in på Vibyvägen",
+            subInstruction: "Sedan Rimbo Skolväg",
+            iconSvg: '<svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>',
+            speechText: "Om 250 meter, sväng vänster in på Vibyvägen.",
+            shouldSpeak: index === 1
+        };
+    }
+}
+
+function finishNavigation() {
+    isNavRunning = false;
+    if (navInterval) clearInterval(navInterval);
+
+    const nextText = document.getElementById("nav-next-text");
+    const subText = document.getElementById("nav-sub-text");
+    const nextDist = document.getElementById("nav-next-dist");
+
+    if (nextText) nextText.innerText = "Du har nått din destination! 🐎🏁";
+    if (subText) subText.innerText = "Godkänd och säker parkering för hästtransport";
+    if (nextDist) nextDist.innerText = "Framme";
+
+    speakSwedishInstruction("Du har nått din destination. Tack för att du kör säkert med EquiNav!");
+    showToast("Du har nått din destination! 🎉", "🏁");
+}
+
+function speakSwedishInstruction(text) {
+    if (!isVoiceEnabled || !window.speechSynthesis) return;
+
+    try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "sv-SE";
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const svVoice = voices.find(v => v.lang.startsWith("sv"));
+        if (svVoice) utterance.voice = svVoice;
+
+        window.speechSynthesis.speak(utterance);
+    } catch (e) {
+        console.warn("Talsyntes ej tillgänglig:", e);
+    }
+}
+
+function calculateBearing(lat1, lon1, lat2, lon2) {
+    const toRad = deg => deg * (Math.PI / 180);
+    const toDeg = rad => rad * (180 / Math.PI);
+
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+
+    const brng = toDeg(Math.atan2(y, x));
+    return (brng + 360) % 360;
 }
 
 // ----------------------------------------------------

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'equinav-v25-osm-route-styled';
+const CACHE_NAME = 'equinav-v26-merge-all';
 const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './index.css?v=20260829_1920',
-  './app.js?v=20260829_1920',
-  './db.js?v=20260829_1920',
+  './index.css?v=20260829_1945',
+  './app.js?v=20260829_1945',
+  './db.js?v=20260829_1945',
   './logo.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',

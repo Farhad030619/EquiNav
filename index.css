@@ -2202,3 +2202,179 @@ html, body {
 .btn-upgrade-pro-pill:active {
     transform: scale(0.97);
 }
+
+/* ========================================== */
+/* FLOATING MAP CONTROLS & SATELLITE SWITCHER */
+/* ========================================== */
+.map-floating-controls {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+}
+
+.map-ctrl-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s, background-color 0.15s;
+}
+
+.map-ctrl-btn:active {
+    transform: scale(0.92);
+}
+
+.map-zoom-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.map-zoom-group .map-ctrl-btn {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    height: 38px;
+}
+
+.map-zoom-group .map-ctrl-btn:first-child {
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* Horse Safety Badge */
+.horse-safety-badge {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    z-index: 800;
+    background: rgba(24, 32, 26, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #ffffff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    pointer-events: none;
+}
+
+/* ========================================== */
+/* VEHICLE MARKER & LIVE NAVIGATION ENGINE    */
+/* ========================================== */
+.vehicle-nav-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vehicle-nav-core {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #345735;
+    border: 3px solid #ffffff;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s ease-out;
+    z-index: 2;
+}
+
+.vehicle-pulse-ring {
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: rgba(52, 87, 53, 0.25);
+    border: 1.5px solid rgba(52, 87, 53, 0.4);
+    animation: pulseVehicleRing 2s infinite ease-out;
+    z-index: 1;
+}
+
+@keyframes pulseVehicleRing {
+    0% {
+        transform: scale(0.7);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+
+/* Live Simulation Controls */
+.nav-sim-controls {
+    position: absolute;
+    top: 130px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 900;
+}
+
+.btn-sim-control {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-main);
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.1s;
+}
+
+.btn-sim-control:active {
+    transform: scale(0.94);
+}
+
+.speed-warning {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    animation: speedBlink 1s infinite alternate;
+}
+
+@keyframes speedBlink {
+    0% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.search-mode-tabs .active {
+    background: var(--primary-green) !important;
+    color: #ffffff !important;
+    border-color: var(--primary-green) !important;
+}
+
