@@ -1401,13 +1401,121 @@ function initProfileSettings() {
 // 9. LIVE-NAVIGERING HUD & RÖSTNAVIGERING (Equi live-navigering.png)
 // ----------------------------------------------------
 let navInterval = null;
+let navWatchId = null;
 let navCoordsIndex = 0;
 let isNavRunning = false;
 let isNavPaused = false;
 let navSpeedMultiplier = 1;
-let isVoiceEnabled = true;
+let isVoiceEnabled = false; // Avstängd som standard enligt önskemål
 let vehicleMarker = null;
 let lastSpokenText = "";
+let lastUserGpsPos = null;
+let lastGpsTimestamp = null;
+let currentArrowRotation = 0;
+let lastCompassHeading = null;
+let isOrientationListening = false;
+
+// Skapa Google Maps-liknande 3D-navigationspil
+function createGoogleNavIcon() {
+    return L.divIcon({
+        className: 'vehicle-nav-marker',
+        html: `
+            <div class="google-nav-puck">
+                <div class="google-nav-pulse"></div>
+                <div class="google-nav-arrow-wrapper" id="vehicle-core-icon" style="transform: rotate(${currentArrowRotation}deg);">
+                    <svg class="google-nav-arrow-svg" viewBox="0 0 36 36" width="38" height="38">
+                        <defs>
+                            <filter id="arrow-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="rgba(0,0,0,0.45)"/>
+                            </filter>
+                        </defs>
+                        <!-- Skarp vit kontur med djup skugga -->
+                        <path d="M18 2 L33 32 L18 24.5 L3 32 Z" fill="#ffffff" filter="url(#arrow-shadow)"/>
+                        <!-- Vänster vinge (Google Maps ljusblå) -->
+                        <path d="M18 5 L5.5 30 L18 23.5 Z" fill="#1A73E8"/>
+                        <!-- Höger vinge (Google Maps mörkblå skuggning för 3D) -->
+                        <path d="M18 5 L30.5 30 L18 23.5 Z" fill="#1557B0"/>
+                        <!-- Centrumlinje för precision -->
+                        <line x1="18" y1="5" x2="18" y2="23.5" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+                    </svg>
+                </div>
+            </div>
+        `,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
+    });
+}
+
+// Vrid pilen mjukt utan att göra onödiga 360-varv
+function rotateNavigationArrow(targetDeg) {
+    if (targetDeg === null || targetDeg === undefined || isNaN(targetDeg)) return;
+    const arrowEl = document.getElementById("vehicle-core-icon");
+    if (!arrowEl) return;
+
+    const normTarget = ((targetDeg % 360) + 360) % 360;
+    const currentNorm = ((currentArrowRotation % 360) + 360) % 360;
+
+    let delta = normTarget - currentNorm;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    currentArrowRotation += delta;
+    arrowEl.style.transform = `rotate(${currentArrowRotation}deg)`;
+}
+
+// Lyssna på telefonens kompass (DeviceOrientation)
+function handleOrientationEvent(event) {
+    let heading = null;
+
+    // iOS Safari
+    if (typeof event.webkitCompassHeading !== "undefined" && event.webkitCompassHeading !== null) {
+        heading = event.webkitCompassHeading;
+    }
+    // Android / w3c standard
+    else if (event.alpha !== null && typeof event.alpha !== "undefined") {
+        heading = (360 - event.alpha) % 360;
+    }
+
+    if (heading !== null && !isNaN(heading)) {
+        lastCompassHeading = Math.round(heading);
+        // Vrid navigationspilen omedelbart när telefonen vrids
+        rotateNavigationArrow(lastCompassHeading);
+    }
+}
+
+function startOrientationListener() {
+    if (isOrientationListening) return;
+
+    // För iOS 13+ krävs begäran om tillstånd vid användarklick
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+            .then((res) => {
+                if (res === 'granted') {
+                    isOrientationListening = true;
+                    window.addEventListener('deviceorientation', handleOrientationEvent, true);
+                    console.log("[EquiNav] Kompassbehörighet beviljad på iOS");
+                }
+            })
+            .catch((err) => {
+                console.warn("[EquiNav] Kompassfel:", err);
+                isOrientationListening = true;
+                window.addEventListener('deviceorientation', handleOrientationEvent, true);
+            });
+    } else {
+        isOrientationListening = true;
+        if ('ondeviceorientationabsolute' in window) {
+            window.addEventListener('deviceorientationabsolute', handleOrientationEvent, true);
+        }
+        window.addEventListener('deviceorientation', handleOrientationEvent, true);
+    }
+}
+
+function stopOrientationListener() {
+    if (!isOrientationListening) return;
+    isOrientationListening = false;
+    window.removeEventListener('deviceorientationabsolute', handleOrientationEvent, true);
+    window.removeEventListener('deviceorientation', handleOrientationEvent, true);
+}
 
 function initNavigationMode() {
     const startNavBtn = document.getElementById("btn-start-navigation");
@@ -1420,6 +1528,7 @@ function initNavigationMode() {
 
     if (startNavBtn) {
         startNavBtn.addEventListener("click", () => {
+            startOrientationListener();
             startLiveNavigation();
         });
     }
@@ -1444,11 +1553,11 @@ function initNavigationMode() {
                 navVoiceBtn.classList.add("active");
                 if (icon) icon.innerText = "🔊";
                 showToast("Röstguidning: Påslagen (Svenska)", "🔊");
-                speakSwedishInstruction("Röstguidning påslagen.");
             } else {
                 navVoiceBtn.classList.remove("active");
                 if (icon) icon.innerText = "🔇";
                 showToast("Röstguidning: Avstängd", "🔇");
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
             }
         });
     }
@@ -1457,7 +1566,10 @@ function initNavigationMode() {
         navRecenterBtn.addEventListener("click", () => {
             if (vehicleMarker) {
                 map.setView(vehicleMarker.getLatLng(), 16, { animate: true });
-                showToast("Centrerad på ekipaget", "🎯");
+                showToast("Centrerad på din position", "🎯");
+            } else if (currentUserGpsCoords) {
+                map.setView(currentUserGpsCoords, 16, { animate: true });
+                showToast("Centrerad på din position", "🎯");
             }
         });
     }
@@ -1680,6 +1792,13 @@ function startLiveNavigation() {
     isNavPaused = false;
     navCoordsIndex = 0;
     lastSpokenText = "";
+    lastUserGpsPos = null;
+    lastGpsTimestamp = null;
+
+    // Stoppa eventuellt pågående tal
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
 
     // Förbered alla dynamiska steg för den faktiskt beräknade rutten
     processedRouteSteps = processRouteSteps(
@@ -1710,32 +1829,62 @@ function startLiveNavigation() {
         }
     }
 
-    // Skapa fordonets pulserande markör
+    // Initial hastighet
+    const speedPill = document.getElementById("nav-current-speed");
+    if (speedPill) {
+        speedPill.innerText = "0 km/h";
+        speedPill.classList.remove("speed-warning");
+    }
+
+    // Skapa fordonets Google Maps navigationspil på användarens position eller ruttstart
     if (vehicleMarker) map.removeLayer(vehicleMarker);
-    const startPt = currentRouteCoordinates[0] || [59.3293, 18.0686];
+    const startPt = currentUserGpsCoords || currentRouteCoordinates[0] || [59.3293, 18.0686];
 
     vehicleMarker = L.marker(startPt, {
-        icon: L.divIcon({
-            className: 'vehicle-nav-marker',
-            html: `
-                <div class="vehicle-pulse-ring"></div>
-                <div class="vehicle-nav-core" id="vehicle-core-icon">🐎</div>
-            `,
-            iconSize: [44, 44],
-            iconAnchor: [22, 22]
-        }),
+        icon: createGoogleNavIcon(),
         zIndexOffset: 1000
     }).addTo(map);
 
     map.setView(startPt, 16, { animate: true });
 
-    showToast("Live GPS-navigering startad! Max 80 km/h med hästsläp.", "🟢");
-    if (processedRouteSteps.length > 0) {
-        speakSwedishInstruction(`Navigering startad. ${processedRouteSteps[0].speechText}`);
+    showToast("Live GPS aktiv – följer dina rörelser och kompass", "📍");
+
+    // Starta orienteringslyssnare för kompassen
+    startOrientationListener();
+
+    // Stoppa eventuell tidigare GPS-spårning eller intervall
+    if (navWatchId !== null) {
+        navigator.geolocation.clearWatch(navWatchId);
+        navWatchId = null;
+    }
+    if (navInterval) {
+        clearInterval(navInterval);
+        navInterval = null;
     }
 
-    if (navInterval) clearInterval(navInterval);
-    navInterval = setInterval(stepNavigationSimulation, 500);
+    // Starta RIKTIG GPS-spårning (ingen simulering)
+    if ("geolocation" in navigator) {
+        const geoOptions = {
+            enableHighAccuracy: true,
+            maximumAge: 1000,
+            timeout: 12000
+        };
+
+        navWatchId = navigator.geolocation.watchPosition(
+            handleLiveGpsPosition,
+            handleLiveGpsError,
+            geoOptions
+        );
+
+        // Omedelbar positionsavläsning för snabb start
+        navigator.geolocation.getCurrentPosition(
+            handleLiveGpsPosition,
+            (err) => console.log("EquiNav väntar på GPS-signal...", err),
+            geoOptions
+        );
+    } else {
+        showToast("GPS stöds inte i denna enhet/webbläsare", "⚠️");
+    }
 
     // Trigga Zero-Speed Annons vid stillastående
     triggerZeroSpeedAd();
@@ -1743,9 +1892,18 @@ function startLiveNavigation() {
 
 function stopLiveNavigation() {
     isNavRunning = false;
+    stopOrientationListener();
+
+    if (navWatchId !== null) {
+        navigator.geolocation.clearWatch(navWatchId);
+        navWatchId = null;
+    }
     if (navInterval) {
         clearInterval(navInterval);
         navInterval = null;
+    }
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
     }
 
     if (vehicleMarker) {
@@ -1760,60 +1918,121 @@ function stopLiveNavigation() {
     showToast("Navigering avslutad.", "🏁");
 }
 
-function stepNavigationSimulation() {
-    if (!isNavRunning || isNavPaused || !currentRouteCoordinates.length) return;
+function handleLiveGpsPosition(pos) {
+    if (!isNavRunning) return;
 
-    // Flytta framåt baserat på hastighetsmultiplikator
-    navCoordsIndex += navSpeedMultiplier;
-    if (navCoordsIndex >= currentRouteCoordinates.length - 1) {
-        navCoordsIndex = currentRouteCoordinates.length - 1;
-        finishNavigation();
-        return;
-    }
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const currentPt = [lat, lng];
+    currentUserGpsCoords = currentPt;
 
-    const currentPt = currentRouteCoordinates[navCoordsIndex];
-    const nextPt = currentRouteCoordinates[Math.min(navCoordsIndex + 1, currentRouteCoordinates.length - 1)];
-
-    // Beräkna riktningsvinkel (bearing)
-    const bearing = calculateBearing(currentPt[0], currentPt[1], nextPt[0], nextPt[1]);
-    const vehicleIcon = document.getElementById("vehicle-core-icon");
-    if (vehicleIcon) {
-        vehicleIcon.style.transform = `rotate(${bearing}deg)`;
-    }
-
-    if (vehicleMarker) {
+    // Flytta eller skapa Google Maps-pilen på kartan
+    if (!vehicleMarker) {
+        vehicleMarker = L.marker(currentPt, {
+            icon: createGoogleNavIcon(),
+            zIndexOffset: 1000
+        }).addTo(map);
+    } else {
         vehicleMarker.setLatLng(currentPt);
     }
 
-    // Centrera kartan mjukt på ekipaget
-    map.panTo(currentPt, { animate: true, duration: 0.4 });
+    // Hastighet i km/h (från GPS-chip eller positionsförflyttning)
+    let speedKmh = 0;
+    if (pos.coords.speed !== null && !isNaN(pos.coords.speed) && pos.coords.speed >= 0) {
+        speedKmh = Math.round(pos.coords.speed * 3.6);
+    } else if (lastUserGpsPos && lastGpsTimestamp) {
+        const movedDistMeters = haversineDistance(lastUserGpsPos[0], lastUserGpsPos[1], lat, lng) * 1000;
+        const timeSec = (pos.timestamp - lastGpsTimestamp) / 1000;
+        if (timeSec > 0 && timeSec < 10) {
+            speedKmh = Math.round((movedDistMeters / timeSec) * 3.6);
+        }
+    }
 
-    // Hitta aktuell och nästa svänginstruktion
-    updateTurnInstructionsAndStats(currentPt);
-}
+    // Vrid navigationspilen:
+    // 1. Vid körning i fart (> 10 km/h) och giltig GPS-kurs, prioritera GPS-riktning
+    let gpsHeading = pos.coords.heading;
+    if (gpsHeading !== null && !isNaN(gpsHeading) && gpsHeading >= 0 && speedKmh > 10) {
+        rotateNavigationArrow(gpsHeading);
+    } else if (lastCompassHeading !== null) {
+        // 2. Vid stillastående eller låg fart: telefonens kompass vrider pilen när du vrider telefonen
+        rotateNavigationArrow(lastCompassHeading);
+    } else if (lastUserGpsPos) {
+        // 3. Fallback: beräkna bearing mellan två punkter om förflyttning >= 3m skett
+        const movedDistMeters = haversineDistance(lastUserGpsPos[0], lastUserGpsPos[1], lat, lng) * 1000;
+        if (movedDistMeters >= 3) {
+            const calculatedBearing = calculateBearing(lastUserGpsPos[0], lastUserGpsPos[1], lat, lng);
+            rotateNavigationArrow(calculatedBearing);
+        }
+    }
 
-function updateTurnInstructionsAndStats(currentPt) {
-    const totalPoints = currentRouteCoordinates.length;
-    const progress = Math.min(1, Math.max(0, navCoordsIndex / totalPoints));
-    const totalDistMeters = currentRouteTotalDistance || 15000;
-    const currentDistAlongRoute = progress * totalDistMeters;
-    const remainingMeters = Math.max(0, totalDistMeters - currentDistAlongRoute);
-    const remainingKm = (remainingMeters / 1000).toFixed(1);
-    
-    // Hästtransporthastighet ~72-78 km/h på rak väg, lägre vid svängar
-    const baseSpeed = Math.floor(72 + Math.sin(navCoordsIndex * 0.3) * 6);
+    lastUserGpsPos = currentPt;
+    lastGpsTimestamp = pos.timestamp || Date.now();
+
     const speedPill = document.getElementById("nav-current-speed");
     if (speedPill) {
-        speedPill.innerText = `${baseSpeed} km/h`;
-        if (baseSpeed > 80) {
+        speedPill.innerText = `${speedKmh} km/h`;
+        if (speedKmh > 80) {
             speedPill.classList.add("speed-warning");
         } else {
             speedPill.classList.remove("speed-warning");
         }
     }
 
-    // Beräkna ankomsttid
-    const remainingMins = Math.round((remainingMeters / 1000 / 75) * 60);
+    // Centrera kartan mjukt på ekipagets verkliga position
+    map.panTo(currentPt, { animate: true, duration: 0.5 });
+
+    // Uppdatera instruktioner och kvarvarande sträcka utifrån GPS-position
+    updateTurnInstructionsAndStats(currentPt, speedKmh);
+}
+
+function handleLiveGpsError(err) {
+    console.warn("[EquiNav Live GPS]:", err.code, err.message);
+    if (err.code === 1) {
+        showToast("Platsåtkomst krävs för GPS-spårning.", "⚠️");
+    } else if (err.code === 2) {
+        showToast("Söker GPS-signal...", "📡");
+    }
+}
+
+function updateTurnInstructionsAndStats(currentPt, currentSpeedKmh) {
+    if (!currentRouteCoordinates || currentRouteCoordinates.length < 2) return;
+
+    // Hitta närmaste koordinat längs rutten
+    let closestIdx = 0;
+    let minDistanceKm = Infinity;
+    for (let i = 0; i < currentRouteCoordinates.length; i++) {
+        const d = haversineDistance(currentPt[0], currentPt[1], currentRouteCoordinates[i][0], currentRouteCoordinates[i][1]);
+        if (d < minDistanceKm) {
+            minDistanceKm = d;
+            closestIdx = i;
+        }
+    }
+
+    // Beräkna kvarvarande meter till målet längs rutten
+    let remainingMeters = 0;
+    for (let i = closestIdx; i < currentRouteCoordinates.length - 1; i++) {
+        remainingMeters += haversineDistance(
+            currentRouteCoordinates[i][0], currentRouteCoordinates[i][1],
+            currentRouteCoordinates[i+1][0], currentRouteCoordinates[i+1][1]
+        ) * 1000;
+    }
+    remainingMeters += Math.round(minDistanceKm * 1000);
+
+    // Kontrollera om användaren nått destinationen (inom 40 meter från slutpunkten)
+    const endCoord = currentRouteCoordinates[currentRouteCoordinates.length - 1];
+    const distToEndMeters = haversineDistance(currentPt[0], currentPt[1], endCoord[0], endCoord[1]) * 1000;
+    if (distToEndMeters < 40 || (closestIdx >= currentRouteCoordinates.length - 2 && remainingMeters < 50)) {
+        finishNavigation();
+        return;
+    }
+
+    const totalDistMeters = currentRouteTotalDistance || 15000;
+    const currentDistAlongRoute = Math.max(0, totalDistMeters - remainingMeters);
+    const remainingKm = (remainingMeters / 1000).toFixed(1);
+
+    // Beräkna ankomsttid och ETA baserat på hastighet (max 80 km/h för hästtransport, snitt ~72 km/h)
+    const effectiveSpeed = (currentSpeedKmh && currentSpeedKmh > 25 && currentSpeedKmh <= 90) ? currentSpeedKmh : 72;
+    const remainingMins = Math.max(1, Math.round((remainingMeters / 1000 / effectiveSpeed) * 60));
     const hrs = Math.floor(remainingMins / 60);
     const mins = remainingMins % 60;
     const timeRemainingText = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
@@ -1845,7 +2064,7 @@ function updateTurnInstructionsAndStats(currentPt) {
     }
 
     const currentStep = processedRouteSteps[activeStepIdx];
-    const distToTurn = Math.max(20, Math.round(currentStep.cumDistEnd - currentDistAlongRoute));
+    const distToTurn = Math.max(10, Math.round(currentStep.cumDistEnd - currentDistAlongRoute));
     const formattedDist = distToTurn >= 1000 ? `${(distToTurn / 1000).toFixed(1)} km` : `${Math.round(distToTurn / 10) * 10} m`;
 
     const turnIcon = document.getElementById("nav-turn-icon");
@@ -1865,16 +2084,19 @@ function updateTurnInstructionsAndStats(currentPt) {
         if (subBanner) subBanner.classList.add("hidden");
     }
 
-    // Röstguidning vid nytt steg
-    if (currentStep.mainText !== lastSpokenText) {
-        lastSpokenText = currentStep.mainText;
-        speakSwedishInstruction(currentStep.speechText);
-    }
+    // Ingen röstguidning – användaren vill inte ha tal
 }
 
 function finishNavigation() {
     isNavRunning = false;
-    if (navInterval) clearInterval(navInterval);
+    if (navWatchId !== null) {
+        navigator.geolocation.clearWatch(navWatchId);
+        navWatchId = null;
+    }
+    if (navInterval) {
+        clearInterval(navInterval);
+        navInterval = null;
+    }
 
     const nextText = document.getElementById("nav-next-text");
     const subText = document.getElementById("nav-sub-text");
@@ -1886,7 +2108,6 @@ function finishNavigation() {
     if (nextDist) nextDist.innerText = "Framme";
     if (subBanner) subBanner.classList.remove("hidden");
 
-    speakSwedishInstruction("Du har nått din destination. Tack för att du kör säkert med EquiNav!");
     showToast("Du har nått din destination! 🎉", "🏁");
 }
 
@@ -1901,7 +2122,7 @@ function speakSwedishInstruction(text) {
         utterance.pitch = 1.0;
 
         const voices = window.speechSynthesis.getVoices();
-        const svVoice = voices.find(v => v.lang.startsWith("sv"));
+        const svVoice = voices.find(v => v.lang && v.lang.startsWith("sv"));
         if (svVoice) utterance.voice = svVoice;
 
         window.speechSynthesis.speak(utterance);

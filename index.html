@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="index.css?v=20260829_2005">
+    <link rel="stylesheet" href="index.css?v=20260904_googlearrow">
     
     <!-- PWA Config -->
     <link rel="manifest" href="manifest.json">
@@ -37,7 +37,7 @@
     -->
     <script>
     (function() {
-        var CURRENT_VERSION = 'v27-2026-08-29-navfix';
+        var CURRENT_VERSION = 'v29-2026-09-04-googlearrow';
         var lastVersion = localStorage.getItem('equinav-sw-version');
 
         // Om versionen ändrats eller aldrig satts → rensa allt
@@ -984,10 +984,10 @@
                 <button class="nav-action-btn" id="btn-nav-hazard" title="Rapportera hinder">
                     <span>⚠️</span>
                 </button>
-                <button class="nav-action-btn active" id="btn-nav-voice" title="Röstguidning på/av">
-                    <span id="icon-nav-voice">🔊</span>
+                <button class="nav-action-btn" id="btn-nav-voice" title="Röstguidning på/av">
+                    <span id="icon-nav-voice">🔇</span>
                 </button>
-                <button class="nav-action-btn" id="btn-nav-recenter" title="Centrera på ekipaget">
+                <button class="nav-action-btn" id="btn-nav-recenter" title="Centrera på din position">
                     <span>🎯</span>
                 </button>
             </div>
@@ -995,11 +995,11 @@
             <!-- Speed Limit & Current Speed Overlay -->
             <div class="nav-speed-overlay">
                 <div class="nav-speed-limit-circle" title="Svensk maxgräns för hästtransport">80</div>
-                <div class="nav-current-speed-pill" id="nav-current-speed">74 km/h</div>
+                <div class="nav-current-speed-pill" id="nav-current-speed">0 km/h</div>
             </div>
 
-            <!-- Simulation Controls (Pausa, Hastighet 1x / 3x / 8x) -->
-            <div class="nav-sim-controls">
+            <!-- Simulation Controls (Dolda vid riktig GPS-navigering) -->
+            <div class="nav-sim-controls" style="display: none;">
                 <button class="btn-sim-control" id="btn-sim-play-pause" title="Pausa / Återuppta simulering">
                     <span id="sim-play-icon">⏸️</span>
                     <span id="sim-play-text">Paus</span>
@@ -1081,9 +1081,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- App Database layer -->
-    <script src="db.js?v=20260829_2005"></script>
+    <script src="db.js?v=20260904_googlearrow"></script>
 
     <!-- App Logic -->
-    <script src="app.js?v=20260829_2005"></script>
+    <script src="app.js?v=20260904_googlearrow"></script>
 </body>
 </html>
