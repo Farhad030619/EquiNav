@@ -867,42 +867,280 @@ async function calculateAndShowRoute(startPlace, endPlace) {
 // ----------------------------------------------------
 // 5. VIKTKALKYLATOR & FORDONSSÖKNING (Equi viktkalkyl.png)
 // ----------------------------------------------------
+// ----------------------------------------------------
+// 5. VIKTKALKYLATOR (UTAN REGNR – BILMODELLER MED SPEC & SPARNING)
+// ----------------------------------------------------
 let selectedCarSpecs = { name: "Volvo XC90 D5 AWD", curb: 2130, total: 2750, maxTow: 2700 };
 let selectedTrailerSpecs = { name: "Ume-släpet B50 / BBO", curb: 820, total: 1990, payload: 1170 };
 
+function populateCarSelect(selectEl, selectedName) {
+    if (!selectEl) return;
+    const cars = (typeof db !== "undefined" && db.getCarCatalog) ? db.getCarCatalog() : [
+        { id: "volvo-xc90-d5", name: "Volvo XC90 D5 AWD", curb: 2130, total: 2750, maxTow: 2700 },
+        { id: "volvo-xc60-d5", name: "Volvo XC60 D4/D5 AWD", curb: 1840, total: 2400, maxTow: 2400 },
+        { id: "volvo-v90-cc", name: "Volvo V90 Cross Country AWD", curb: 1820, total: 2400, maxTow: 2500 },
+        { id: "vw-touareg-v6", name: "Volkswagen Touareg 3.0 V6 TDI", curb: 2070, total: 2850, maxTow: 3500 },
+        { id: "vw-passat-alltrack", name: "Volkswagen Passat Alltrack 2.0 TDI", curb: 1735, total: 2300, maxTow: 2200 },
+        { id: "vw-tiguan-allspace", name: "Volkswagen Tiguan Allspace TDI", curb: 1780, total: 2390, maxTow: 2500 },
+        { id: "bmw-x5-x30d", name: "BMW X5 xDrive30d (G05)", curb: 2185, total: 2860, maxTow: 3500 },
+        { id: "bmw-x3-x30d", name: "BMW X3 xDrive30d", curb: 1900, total: 2500, maxTow: 2400 },
+        { id: "audi-q7-50tdi", name: "Audi Q7 50 TDI quattro", curb: 2135, total: 2940, maxTow: 3500 },
+        { id: "ford-ranger-wildtrak", name: "Ford Ranger Wildtrak 4x4", curb: 2190, total: 3270, maxTow: 3500 },
+        { id: "toyota-hilux-2.8d", name: "Toyota Hilux 2.8 D-4D 4x4", curb: 2100, total: 3210, maxTow: 3500 },
+        { id: "mb-gle-350d", name: "Mercedes-Benz GLE 350d 4MATIC", curb: 2235, total: 3050, maxTow: 3500 },
+        { id: "subaru-outback-2.5i", name: "Subaru Outback 2.5i AWD", curb: 1640, total: 2100, maxTow: 2000 },
+        { id: "skoda-kodiaq-4x4", name: "Skoda Kodiaq 2.0 TDI 4x4", curb: 1750, total: 2350, maxTow: 2300 }
+    ];
+
+    selectEl.innerHTML = "";
+    cars.forEach(car => {
+        const opt = document.createElement("option");
+        opt.value = car.name;
+        opt.innerText = `${car.name} (Dragvikt: ${car.maxTow} kg)`;
+        opt.dataset.curb = car.curb;
+        opt.dataset.total = car.total;
+        opt.dataset.maxtow = car.maxTow;
+        if (selectedName && car.name.toLowerCase() === selectedName.toLowerCase()) {
+            opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+    });
+
+    const customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.innerText = "➕ Ange egen bilmodell...";
+    selectEl.appendChild(customOpt);
+}
+
+function populateTrailerSelect(selectEl, selectedName) {
+    if (!selectEl) return;
+    const trailers = (typeof db !== "undefined" && db.getTrailerCatalog) ? db.getTrailerCatalog() : [
+        { id: "ume-b50", name: "Ume-släpet B50 / BBO", curb: 820, total: 1990, payload: 1170 },
+        { id: "ume-a30", name: "Ume-släpet A30 Enkelhäst", curb: 740, total: 1500, payload: 760 },
+        { id: "cheval-gold-ii", name: "Cheval Liberté Gold II", curb: 790, total: 2000, payload: 1210 },
+        { id: "cheval-touring-country", name: "Cheval Liberté Touring Country", curb: 850, total: 2600, payload: 1750 },
+        { id: "ifor-hb511", name: "Ifor Williams HB511", curb: 920, total: 2600, payload: 1680 },
+        { id: "fogelsta-royal", name: "Fogelsta Royal 2000", curb: 860, total: 1990, payload: 1130 },
+        { id: "varmlandsvagnen-classic", name: "Värmlandsvagnen Classic", curb: 780, total: 1500, payload: 720 },
+        { id: "boeckmann-comfort", name: "Böckmann Comfort", curb: 890, total: 2400, payload: 1510 }
+    ];
+
+    selectEl.innerHTML = "";
+    trailers.forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t.name;
+        const payload = t.payload || (t.total - t.curb);
+        opt.innerText = `${t.name} (Total: ${t.total} kg, Maxlast: ${payload} kg)`;
+        opt.dataset.curb = t.curb;
+        opt.dataset.total = t.total;
+        opt.dataset.payload = payload;
+        if (selectedName && t.name.toLowerCase() === selectedName.toLowerCase()) {
+            opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+    });
+
+    const customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.innerText = "➕ Ange eget hästsläp...";
+    selectEl.appendChild(customOpt);
+}
+
+function applyCarSelection(car) {
+    if (!car) return;
+    selectedCarSpecs = {
+        name: car.name,
+        curb: Number(car.curb) || 0,
+        total: Number(car.total) || 0,
+        maxTow: Number(car.maxTow) || 0
+    };
+    const nameInp = document.getElementById("calc-car-name");
+    const curbInp = document.getElementById("calc-car-curb");
+    const totalInp = document.getElementById("calc-car-total");
+    const towInp = document.getElementById("calc-car-maxtow");
+
+    if (nameInp) nameInp.value = car.name;
+    if (curbInp) curbInp.value = car.curb;
+    if (totalInp) totalInp.value = car.total;
+    if (towInp) towInp.value = car.maxTow;
+}
+
+function applyTrailerSelection(trailer) {
+    if (!trailer) return;
+    const payload = Number(trailer.payload) || Math.max(0, (Number(trailer.total) || 0) - (Number(trailer.curb) || 0));
+    selectedTrailerSpecs = {
+        name: trailer.name,
+        curb: Number(trailer.curb) || 0,
+        total: Number(trailer.total) || 0,
+        payload: payload
+    };
+    const nameInp = document.getElementById("calc-trailer-name");
+    const curbInp = document.getElementById("calc-trailer-curb");
+    const totalInp = document.getElementById("calc-trailer-total");
+    const payloadInp = document.getElementById("calc-trailer-payload");
+
+    if (nameInp) nameInp.value = trailer.name;
+    if (curbInp) curbInp.value = trailer.curb;
+    if (totalInp) totalInp.value = trailer.total;
+    if (payloadInp) payloadInp.value = payload;
+}
+
 function initWeightCalculator() {
-    const calcBtn = document.getElementById("btn-calculate-weights");
+    const carSelect = document.getElementById("calc-car-select");
+    const trailerSelect = document.getElementById("calc-trailer-select");
+    const carNameInp = document.getElementById("calc-car-name");
+    const carCurbInp = document.getElementById("calc-car-curb");
+    const carTotalInp = document.getElementById("calc-car-total");
+    const carMaxTowInp = document.getElementById("calc-car-maxtow");
+
+    const trailerNameInp = document.getElementById("calc-trailer-name");
+    const trailerCurbInp = document.getElementById("calc-trailer-curb");
+    const trailerTotalInp = document.getElementById("calc-trailer-total");
+    const trailerPayloadInp = document.getElementById("calc-trailer-payload");
     const horseWeightInput = document.getElementById("calc-horse-weight");
-    const carRegInput = document.getElementById("calc-car-reg");
-    const trailerRegInput = document.getElementById("calc-trailer-reg");
-    const carModelInput = document.getElementById("calc-car-model");
-    const carYearInput = document.getElementById("calc-car-year");
-    const trailerModelInput = document.getElementById("calc-trailer-model");
 
-    // Sökläge: Regnr vs Modell & År
-    const btnModeReg = document.getElementById("btn-mode-reg");
-    const btnModeModel = document.getElementById("btn-mode-model");
-    const modeRegContainer = document.getElementById("mode-reg-container");
-    const modeModelContainer = document.getElementById("mode-model-container");
+    const btnSaveCar = document.getElementById("btn-save-custom-car");
+    const btnSaveTrailer = document.getElementById("btn-save-custom-trailer");
+    const calcBtn = document.getElementById("btn-calculate-weights");
 
-    if (btnModeReg && btnModeModel) {
-        btnModeReg.addEventListener("click", () => {
-            btnModeReg.className = "btn btn-sm btn-secondary active";
-            btnModeModel.className = "btn btn-sm btn-outline";
-            modeRegContainer?.classList.remove("hidden");
-            modeModelContainer?.classList.add("hidden");
+    // Ladda sparad kombination eller default
+    const savedCombo = JSON.parse(localStorage.getItem('equinav_saved_combo') || localStorage.getItem('equinav-preset') || 'null');
+    const initialCar = savedCombo?.car || selectedCarSpecs;
+    const initialTrailer = savedCombo?.trailer || selectedTrailerSpecs;
+    if (savedCombo?.horseWeight && horseWeightInput) {
+        horseWeightInput.value = savedCombo.horseWeight;
+    }
+
+    // Fyll i dropdowns
+    if (carSelect) {
+        populateCarSelect(carSelect, initialCar.name);
+        applyCarSelection(initialCar);
+    }
+    if (trailerSelect) {
+        populateTrailerSelect(trailerSelect, initialTrailer.name);
+        applyTrailerSelection(initialTrailer);
+    }
+
+    // Växla bil i dropdown
+    if (carSelect) {
+        carSelect.addEventListener("change", () => {
+            if (carSelect.value === "__custom__") {
+                if (carNameInp) {
+                    carNameInp.value = "";
+                    carNameInp.focus();
+                }
+            } else {
+                const opt = carSelect.selectedOptions[0];
+                if (opt) {
+                    applyCarSelection({
+                        name: opt.value,
+                        curb: Number(opt.dataset.curb) || 0,
+                        total: Number(opt.dataset.total) || 0,
+                        maxTow: Number(opt.dataset.maxtow) || 0
+                    });
+                }
+            }
+            calculateWeights();
         });
+    }
 
-        btnModeModel.addEventListener("click", () => {
-            btnModeModel.className = "btn btn-sm btn-secondary active";
-            btnModeReg.className = "btn btn-sm btn-outline";
-            modeModelContainer?.classList.remove("hidden");
-            modeRegContainer?.classList.add("hidden");
+    // Växla släp i dropdown
+    if (trailerSelect) {
+        trailerSelect.addEventListener("change", () => {
+            if (trailerSelect.value === "__custom__") {
+                if (trailerNameInp) {
+                    trailerNameInp.value = "";
+                    trailerNameInp.focus();
+                }
+            } else {
+                const opt = trailerSelect.selectedOptions[0];
+                if (opt) {
+                    applyTrailerSelection({
+                        name: opt.value,
+                        curb: Number(opt.dataset.curb) || 0,
+                        total: Number(opt.dataset.total) || 0,
+                        payload: Number(opt.dataset.payload) || 0
+                    });
+                }
+            }
+            calculateWeights();
+        });
+    }
+
+    // Auto-beräkna maxlast när släpets tjänstevikt eller totalvikt ändras
+    const updateTrailerPayload = () => {
+        const curb = parseFloat(trailerCurbInp?.value) || 0;
+        const total = parseFloat(trailerTotalInp?.value) || 0;
+        if (trailerPayloadInp && total >= curb) {
+            trailerPayloadInp.value = Math.max(0, total - curb);
+        }
+        calculateWeights();
+    };
+
+    if (trailerCurbInp) trailerCurbInp.addEventListener("input", updateTrailerPayload);
+    if (trailerTotalInp) trailerTotalInp.addEventListener("input", updateTrailerPayload);
+
+    // Live-lyssnare på alla spec-inmatningsfält
+    [carNameInp, carCurbInp, carTotalInp, carMaxTowInp, trailerNameInp, trailerPayloadInp, horseWeightInput].forEach(inp => {
+        if (inp) {
+            inp.addEventListener("input", calculateWeights);
+            inp.addEventListener("change", calculateWeights);
+        }
+    });
+
+    // Snabbknappar för hästens vikt
+    document.querySelectorAll(".btn-weight-pill").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".btn-weight-pill").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            const w = btn.dataset.weight;
+            if (horseWeightInput && w) {
+                horseWeightInput.value = w;
+                calculateWeights();
+            }
+        });
+    });
+
+    // Spara anpassad bilmodell
+    if (btnSaveCar) {
+        btnSaveCar.addEventListener("click", () => {
+            const name = carNameInp?.value.trim() || "Anpassad bil";
+            const curb = parseFloat(carCurbInp?.value) || 0;
+            const total = parseFloat(carTotalInp?.value) || 0;
+            const maxTow = parseFloat(carMaxTowInp?.value) || 0;
+
+            const carObj = { id: `custom-${Date.now()}`, name, curb, total, maxTow };
+            if (typeof db !== "undefined" && db.saveCustomCar) {
+                db.saveCustomCar(carObj);
+            }
+            populateCarSelect(carSelect, name);
+            const profileCarSel = document.getElementById("profile-car-select");
+            if (profileCarSel) populateCarSelect(profileCarSel, name);
+            showToast(`Bilmodellen "${name}" har sparats till din lista!`, "💾");
+        });
+    }
+
+    // Spara anpassat släp
+    if (btnSaveTrailer) {
+        btnSaveTrailer.addEventListener("click", () => {
+            const name = trailerNameInp?.value.trim() || "Anpassat släp";
+            const curb = parseFloat(trailerCurbInp?.value) || 0;
+            const total = parseFloat(trailerTotalInp?.value) || 0;
+            const payload = parseFloat(trailerPayloadInp?.value) || Math.max(0, total - curb);
+
+            const trailerObj = { id: `custom-t-${Date.now()}`, name, curb, total, payload };
+            if (typeof db !== "undefined" && db.saveCustomTrailer) {
+                db.saveCustomTrailer(trailerObj);
+            }
+            populateTrailerSelect(trailerSelect, name);
+            const profileTrailerSel = document.getElementById("profile-trailer-select");
+            if (profileTrailerSel) populateTrailerSelect(profileTrailerSel, name);
+            showToast(`Släpmodellen "${name}" har sparats till din lista!`, "💾");
         });
     }
 
     // Ladda sparad körkortsklass från localStorage
-    const savedLicense = localStorage.getItem("equinav-license") || "B96";
+    const savedLicense = localStorage.getItem("equinav-license") || (savedCombo?.license || "B96");
     const targetRadio = document.querySelector(`input[name="license-type"][value="${savedLicense}"]`);
     if (targetRadio) {
         targetRadio.checked = true;
@@ -921,206 +1159,176 @@ function initWeightCalculator() {
         });
     });
 
-    // Sökning på bilmodell / släpmodell med debounce
-    let searchDebounce = null;
-    const handleModelSearch = async () => {
-        const carQuery = carModelInput?.value || "";
-        const carYear = carYearInput?.value || "";
-        const trailerQuery = trailerModelInput?.value || "";
-        const resultsPreview = document.getElementById("model-search-results");
-
-        if (carQuery.trim().length >= 2) {
-            const carMatches = await db.searchCarByModel(carQuery, carYear);
-            if (carMatches && carMatches.length > 0) {
-                const match = carMatches[0];
-                selectedCarSpecs = {
-                    name: match.name || `${match.make} ${match.model}`,
-                    curb: match.curb,
-                    total: match.total,
-                    maxTow: match.maxTow
-                };
-                if (resultsPreview) {
-                    resultsPreview.innerHTML = `✅ Bil vald: <strong>${selectedCarSpecs.name}</strong> (Tjänstevikt: ${selectedCarSpecs.curb}kg, Total: ${selectedCarSpecs.total}kg, Dragvikt: ${selectedCarSpecs.maxTow}kg)`;
-                }
-            }
-        }
-
-        if (trailerQuery.trim().length >= 2) {
-            const trailerMatches = await db.searchTrailerByModel(trailerQuery);
-            if (trailerMatches && trailerMatches.length > 0) {
-                const match = trailerMatches[0];
-                selectedTrailerSpecs = {
-                    name: match.name || `${match.make} ${match.model}`,
-                    curb: match.curb,
-                    total: match.total,
-                    payload: match.payload || (match.total - match.curb)
-                };
-                if (resultsPreview) {
-                    resultsPreview.innerHTML += `<br>✅ Släp valt: <strong>${selectedTrailerSpecs.name}</strong> (Total: ${selectedTrailerSpecs.total}kg, Maxlast: ${selectedTrailerSpecs.payload}kg)`;
-                }
-            }
-        }
-
-        calculateWeights();
-    };
-
-    [carModelInput, carYearInput, trailerModelInput].forEach(inp => {
-        if (inp) {
-            inp.addEventListener("input", () => {
-                clearTimeout(searchDebounce);
-                searchDebounce = setTimeout(handleModelSearch, 400);
-            });
-        }
-    });
-
-    // Regnr uppslag
-    const handleRegSearch = async () => {
-        const carReg = carRegInput?.value.trim().toUpperCase() || "";
-        const trailerReg = trailerRegInput?.value.trim().toUpperCase() || "";
-
-        if (carReg.length >= 3) {
-            const carData = await db.getCarSpecs(carReg);
-            if (carData) {
-                selectedCarSpecs = {
-                    name: carData.name || `Bil (${carReg})`,
-                    curb: carData.curb,
-                    total: carData.total,
-                    maxTow: carData.maxTow
-                };
-            }
-        }
-
-        if (trailerReg.length >= 3) {
-            const trailerData = await db.getTrailerSpecs(trailerReg);
-            if (trailerData) {
-                selectedTrailerSpecs = {
-                    name: trailerData.name || `Släp (${trailerReg})`,
-                    curb: trailerData.curb,
-                    total: trailerData.total,
-                    payload: trailerData.payload || (trailerData.total - trailerData.curb)
-                };
-            }
-        }
-
-        calculateWeights();
-    };
-
-    [carRegInput, trailerRegInput].forEach(inp => {
-        if (inp) {
-            inp.addEventListener("change", handleRegSearch);
-        }
-    });
-
-    if (horseWeightInput) {
-        horseWeightInput.addEventListener("input", calculateWeights);
-    }
-
     if (calcBtn) {
-        calcBtn.addEventListener("click", () => {
-            if (modeRegContainer && !modeRegContainer.classList.contains("hidden")) {
-                handleRegSearch();
-            } else {
-                handleModelSearch();
-            }
-            calculateWeights();
-        });
+        calcBtn.addEventListener("click", calculateWeights);
     }
 
-    // Kör en första kontroll vid start
+    // Kör första kontroll vid start
     calculateWeights();
 }
 
 function calculateWeights() {
+    const carName = document.getElementById("calc-car-name")?.value || selectedCarSpecs.name || "Dragbil";
+    const carCurb = parseFloat(document.getElementById("calc-car-curb")?.value) || 0;
+    const carTotal = parseFloat(document.getElementById("calc-car-total")?.value) || 0;
+    const carMaxTow = parseFloat(document.getElementById("calc-car-maxtow")?.value) || 0;
+
+    const trailerName = document.getElementById("calc-trailer-name")?.value || selectedTrailerSpecs.name || "Släpvagn";
+    const trailerCurb = parseFloat(document.getElementById("calc-trailer-curb")?.value) || 0;
+    const trailerTotal = parseFloat(document.getElementById("calc-trailer-total")?.value) || 0;
+    const maxPayload = parseFloat(document.getElementById("calc-trailer-payload")?.value) || Math.max(0, trailerTotal - trailerCurb);
     const horseWeight = parseFloat(document.getElementById("calc-horse-weight")?.value) || 0;
+
     const licenseType = document.querySelector('input[name="license-type"]:checked')?.value || "B";
 
-    const car = selectedCarSpecs;
-    const trailer = selectedTrailerSpecs;
+    // Uppdatera aktivt tillstånd
+    selectedCarSpecs = { name: carName, curb: carCurb, total: carTotal, maxTow: carMaxTow };
+    selectedTrailerSpecs = { name: trailerName, curb: trailerCurb, total: trailerTotal, payload: maxPayload };
 
-    const actualTrailerWeight = trailer.curb + horseWeight;
-    const totalTrainWeight = car.total + trailer.total;
-    const maxPayload = trailer.total - trailer.curb;
-    const isLightTrailer = trailer.total <= 750;
+    // Verkliga vikter och lagkrav
+    const actualTrailerWeight = trailerCurb + horseWeight;
+    const totalTrainWeight = carTotal + trailerTotal;
+    const isLightTrailer = trailerTotal <= 750;
+
+    const towMargin = carMaxTow - actualTrailerWeight;
+    const payloadMargin = maxPayload - horseWeight;
 
     let isLicenseLegal = false;
     let licenseLimitText = "";
     const errors = [];
+    const checklistItems = [];
 
-    // 1. Kontrollera körkortsbehörighet enligt Transportstyrelsens regler
+    // 1. KÖRKORTSREGLER ENLIGT TRANSPORTSTYRELSEN
     if (licenseType === "B") {
-        licenseLimitText = "Max 3500 kg tågvikt (eller lätt släp ≤750kg)";
+        licenseLimitText = "Max 3 500 kg sammanlagd totalvikt (eller lätt släp ≤750 kg)";
         if (isLightTrailer) {
-            isLicenseLegal = car.total <= 3500;
-            if (!isLicenseLegal) {
-                errors.push("Bilen har en totalvikt över 3 500 kg vilket kräver C-behörighet.");
+            isLicenseLegal = carTotal <= 3500;
+            if (isLicenseLegal) {
+                checklistItems.push({ valid: true, text: `Körkort (B): Släpet är lätt (≤750 kg) och bilens totalvikt är laglig (${carTotal} kg).` });
+            } else {
+                errors.push(`Bilens totalvikt (${carTotal} kg) överstiger 3 500 kg vilket kräver C-behörighet.`);
+                checklistItems.push({ valid: false, text: `Körkort (B): Bilens totalvikt överstiger 3 500 kg.` });
             }
         } else {
             isLicenseLegal = totalTrainWeight <= 3500;
-            if (!isLicenseLegal) {
-                errors.push(`Tågvikten (${totalTrainWeight} kg) överstiger B-körkortets maxgräns på 3 500 kg med ${totalTrainWeight - 3500} kg.`);
+            if (isLicenseLegal) {
+                checklistItems.push({ valid: true, text: `Körkort (B): Sammanlagd totalvikt ${totalTrainWeight} kg är laglig (max 3 500 kg, marginal: +${3500 - totalTrainWeight} kg).` });
+            } else {
+                errors.push(`Sammanlagd totalvikt (${totalTrainWeight} kg) överstiger B-körkortets maxgräns på 3 500 kg med ${totalTrainWeight - 3500} kg. Kräver B96 eller BE.`);
+                checklistItems.push({ valid: false, text: `Körkort (B): Sammanlagd totalvikt ${totalTrainWeight} kg överskrider 3 500 kg med ${totalTrainWeight - 3500} kg.` });
             }
         }
     } else if (licenseType === "B96") {
-        licenseLimitText = "Max 4250 kg tågvikt";
+        licenseLimitText = "Max 4 250 kg sammanlagd totalvikt";
         isLicenseLegal = totalTrainWeight <= 4250;
-        if (!isLicenseLegal) {
-            errors.push(`Tågvikten (${totalTrainWeight} kg) överstiger utökat B (B96) maxgräns på 4 250 kg med ${totalTrainWeight - 4250} kg.`);
+        if (isLicenseLegal) {
+            checklistItems.push({ valid: true, text: `Körkort (B96): Sammanlagd totalvikt ${totalTrainWeight} kg är laglig (max 4 250 kg, marginal: +${4250 - totalTrainWeight} kg).` });
+        } else {
+            errors.push(`Sammanlagd totalvikt (${totalTrainWeight} kg) överstiger utökat B (B96) maxgräns på 4 250 kg med ${totalTrainWeight - 4250} kg. Kräver BE-körkort.`);
+            checklistItems.push({ valid: false, text: `Körkort (B96): Sammanlagd totalvikt ${totalTrainWeight} kg överskrider 4 250 kg med ${totalTrainWeight - 4250} kg.` });
         }
     } else if (licenseType === "BE") {
-        licenseLimitText = "Släpets totalvikt max 3500 kg";
-        isLicenseLegal = trailer.total <= 3500;
-        if (!isLicenseLegal) {
-            errors.push(`Släpets totalvikt (${trailer.total} kg) överstiger BE-körkortets maxgräns på 3 500 kg med ${trailer.total - 3500} kg.`);
+        licenseLimitText = "Släpets totalvikt max 3 500 kg (BE utfärdat efter 2013)";
+        isLicenseLegal = trailerTotal <= 3500;
+        if (isLicenseLegal) {
+            checklistItems.push({ valid: true, text: `Körkort (BE): Släpets totalvikt (${trailerTotal} kg) är inom tillåten gräns på 3 500 kg.` });
+        } else {
+            errors.push(`Släpets totalvikt (${trailerTotal} kg) överstiger BE-körkortets maxgräns på 3 500 kg med ${trailerTotal - 3500} kg.`);
+            checklistItems.push({ valid: false, text: `Körkort (BE): Släpets totalvikt överskrider 3 500 kg med ${trailerTotal - 3500} kg.` });
         }
     } else if (licenseType === "BE_OLD") {
-        licenseLimitText = "Obegränsad släptotalvikt";
+        licenseLimitText = "Obegränsad släptotalvikt (BE före 2013)";
         isLicenseLegal = true;
+        checklistItems.push({ valid: true, text: `Körkort (BE äldre): Släpets totalvikt (${trailerTotal} kg) är godkänd utan maxbegränsning.` });
     }
 
-    // 2. Kontrollera bilens tekniska dragförmåga
-    if (actualTrailerWeight > car.maxTow) {
-        errors.push(`Släpets faktiska vikt (${actualTrailerWeight} kg) överstiger bilens maximala släpvagnsvikt (${car.maxTow} kg) med ${actualTrailerWeight - car.maxTow} kg.`);
+    // 2. BILENS TEKNISKA DRAGVIKT
+    const isTowLegal = actualTrailerWeight <= carMaxTow;
+    if (isTowLegal) {
+        checklistItems.push({ valid: true, text: `Bilens dragförmåga: Faktisk släpvikt (${actualTrailerWeight} kg) är godkänd av bilen (max ${carMaxTow} kg, marginal: +${towMargin} kg).` });
+    } else {
+        errors.push(`Släpets faktiska vikt (${actualTrailerWeight} kg) överstiger bilens maximala släpvagnsvikt (${carMaxTow} kg) med ${actualTrailerWeight - carMaxTow} kg! Bilen får inte dra denna last.`);
+        checklistItems.push({ valid: false, text: `Bilens dragförmåga: Faktisk släpvikt (${actualTrailerWeight} kg) överskrider bilens max dragvikt (${carMaxTow} kg) med ${actualTrailerWeight - carMaxTow} kg!` });
     }
 
-    // 3. Kontrollera släpets maxlast
-    if (actualTrailerWeight > trailer.total) {
-        errors.push(`Släpet är överlastat! Hästens vikt (${horseWeight} kg) överskrider släpets tillåtna lastkapacitet (${maxPayload} kg) med ${actualTrailerWeight - trailer.total} kg.`);
+    // 3. SLÄPETS LASTKAPACITET
+    const isPayloadLegal = horseWeight <= maxPayload;
+    if (isPayloadLegal) {
+        checklistItems.push({ valid: true, text: `Släpets maxlast: Hästens vikt (${horseWeight} kg) ryms inom släpets tillåtna last (${maxPayload} kg, marginal: +${payloadMargin} kg).` });
+    } else {
+        errors.push(`Släpet är överlastat! Hästens vikt (${horseWeight} kg) överskrider släpets tillåtna maxlast (${maxPayload} kg) med ${horseWeight - maxPayload} kg!`);
+        checklistItems.push({ valid: false, text: `Släpets last: Hästens vikt överskrider max tillåten last med ${horseWeight - maxPayload} kg!` });
     }
 
+    // 4. SLÄPETS FAKTISKA VIKT VS REGISTRERAD TOTALVIKT
+    if (actualTrailerWeight > trailerTotal) {
+        errors.push(`Släpets faktiska bruttovikt (${actualTrailerWeight} kg) överskrider släpets registrerade totalvikt (${trailerTotal} kg) med ${actualTrailerWeight - trailerTotal} kg.`);
+    }
+
+    const isLegal = errors.length === 0 && isLicenseLegal;
+
+    // Statusbanner & sammanfattning
     const banner = document.getElementById("calc-status-banner");
     const bannerText = document.getElementById("calc-status-text");
-    const resultsContainer = document.getElementById("calculator-results");
-
-    const isLegal = errors.length === 0;
+    const summaryBadge = document.getElementById("calc-summary-badge");
 
     if (banner && bannerText) {
         if (isLegal) {
             banner.className = "calc-result-pill";
-            bannerText.innerHTML = `✅ <strong>Kombinationen är laglig!</strong> Ekipaget uppfyller alla krav för ditt ${licenseType}-körkort.`;
+            bannerText.innerHTML = `✅ <strong>Kombinationen är laglig!</strong> Ekipaget uppfyller alla krav för ditt ${licenseType}-körkort och bilens kapacitet.`;
         } else {
             banner.className = "calc-result-pill warning";
             bannerText.innerHTML = `⚠️ <strong>Varning: Ej laglig kombination!</strong><br>${errors.join("<br>")}`;
         }
     }
 
-    // Fyll i specifikationsrutan
+    if (summaryBadge) {
+        summaryBadge.className = isLegal ? "badge-success" : "badge-warning";
+        summaryBadge.innerText = isLegal ? "Laglig" : "Ej laglig";
+    }
+
+    // Rendera checklista
+    const checklistContainer = document.getElementById("calc-checklist");
+    if (checklistContainer) {
+        checklistContainer.innerHTML = checklistItems.map(item => `
+            <div class="calc-check-item ${item.valid ? 'valid' : 'invalid'}">
+                <span>${item.valid ? '✅' : '❌'}</span>
+                <span>${item.text}</span>
+            </div>
+        `).join("");
+    }
+
+    // Fyll i specifikationslistan
     const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.innerText = val;
     };
 
-    setVal("val-car-name", car.name);
-    setVal("val-car-curb", `${car.curb} kg`);
-    setVal("val-car-total", `${car.total} kg`);
-    setVal("val-car-maxtow", `${car.maxTow} kg`);
-    setVal("val-trailer-name", trailer.name);
-    setVal("val-trailer-curb", `${trailer.curb} kg`);
-    setVal("val-trailer-total", `${trailer.total} kg`);
+    setVal("val-car-name", carName);
+    setVal("val-car-curb", `${carCurb} kg`);
+    setVal("val-car-total", `${carTotal} kg`);
+    setVal("val-car-maxtow", `${carMaxTow} kg`);
+    setVal("val-trailer-name", trailerName);
+    setVal("val-trailer-curb", `${trailerCurb} kg`);
+    setVal("val-trailer-total", `${trailerTotal} kg`);
     setVal("val-trailer-maxload", `${maxPayload} kg`);
     setVal("val-actual-trailer-weight", `${actualTrailerWeight} kg`);
     setVal("val-train-weight", `${totalTrainWeight} kg`);
+    setVal("val-license-name", licenseType);
     setVal("val-license-limit", licenseLimitText);
 
+    const towMarginEl = document.getElementById("val-tow-margin");
+    if (towMarginEl) {
+        if (towMargin >= 0) {
+            towMarginEl.style.color = "#137333";
+            towMarginEl.innerText = `(Marginal kvar: +${towMargin} kg)`;
+        } else {
+            towMarginEl.style.color = "#c04c3e";
+            towMarginEl.innerText = `(Överskrider med: ${Math.abs(towMargin)} kg)`;
+        }
+    }
+
+    const resultsContainer = document.getElementById("calculator-results");
     if (resultsContainer) {
         resultsContainer.classList.remove("hidden");
     }
@@ -1799,11 +2007,19 @@ function startLiveNavigation() {
         calculateAndShowRoute("Stockholm", "Strömsholm");
     }
 
+    // Aktivera navigationsläge – dölj alla rutor, sidofält och kontroller som står i vägen
+    document.body.classList.add("nav-active");
+
     const sidebar = document.getElementById("app-sidebar");
     const navHud = document.getElementById("navigation-hud");
 
-    sidebar.className = "sidebar state-collapsed";
-    navHud.classList.remove("hidden");
+    if (sidebar) sidebar.classList.add("hidden");
+    if (navHud) navHud.classList.remove("hidden");
+
+    if (map) {
+        map.closePopup();
+        setTimeout(() => map.invalidateSize(), 200);
+    }
 
     isNavRunning = true;
     isNavPaused = false;
@@ -1911,6 +2127,8 @@ function stopLiveNavigation() {
     isNavRunning = false;
     stopOrientationListener();
 
+    document.body.classList.remove("nav-active");
+
     if (navWatchId !== null) {
         navigator.geolocation.clearWatch(navWatchId);
         navWatchId = null;
@@ -1929,13 +2147,21 @@ function stopLiveNavigation() {
     }
 
     const navHud = document.getElementById("navigation-hud");
-    navHud.classList.add("hidden");
+    if (navHud) navHud.classList.add("hidden");
 
     // Dölj återcentrera-pillern
     const recenterPill = document.getElementById("nav-recenter-pill");
     if (recenterPill) recenterPill.classList.add("hidden");
 
-    expandSidebar("expanded");
+    const sidebar = document.getElementById("app-sidebar");
+    if (sidebar) {
+        sidebar.classList.remove("hidden");
+        expandSidebar("expanded");
+    }
+
+    if (map) {
+        setTimeout(() => map.invalidateSize(), 200);
+    }
 
     showToast("Navigering avslutad.", "🏁");
 }
@@ -2169,72 +2395,128 @@ function calculateBearing(lat1, lon1, lat2, lon2) {
 // MITT EKIPAGE / SAVED PRESETS
 // ----------------------------------------------------
 function initSavedPresets() {
-    const saveBtn = document.getElementById('btn-save-preset');
-    const loadBtn = document.getElementById('btn-load-preset');
+    const savePresetBtn = document.getElementById('btn-save-preset');
+    const loadPresetBtn = document.getElementById('btn-load-preset');
+    const saveComboBtn = document.getElementById('btn-save-combo');
 
-    // Visa "Ladda mitt ekipage" om det finns sparad data
-    const savedPreset = JSON.parse(localStorage.getItem('equinav-preset') || 'null');
-    if (savedPreset && loadBtn) {
-        loadBtn.classList.remove('hidden');
+    const profileCarSelect = document.getElementById('profile-car-select');
+    const profileTrailerSelect = document.getElementById('profile-trailer-select');
+
+    // Ladda sparad combo från localStorage
+    const savedCombo = JSON.parse(localStorage.getItem('equinav_saved_combo') || localStorage.getItem('equinav-preset') || 'null');
+
+    // Populera dropdowns i profil
+    if (profileCarSelect) {
+        populateCarSelect(profileCarSelect, savedCombo ? (savedCombo.car?.name || savedCombo.carName) : selectedCarSpecs.name);
     }
-    
-    // Visa sparat ekipage i profil
-    if (savedPreset) {
-        showSavedPresetDisplay(savedPreset);
-        // Fyll i formuläret med sparade värden
-        const carReg = document.getElementById('preset-car-reg');
-        const trailerReg = document.getElementById('preset-trailer-reg');
-        const horseWeight = document.getElementById('preset-horse-weight');
-        const presetName = document.getElementById('preset-name');
-        if (carReg) carReg.value = savedPreset.carReg || '';
-        if (trailerReg) trailerReg.value = savedPreset.trailerReg || '';
-        if (horseWeight) horseWeight.value = savedPreset.horseWeight || '';
-        if (presetName) presetName.value = savedPreset.name || '';
+    if (profileTrailerSelect) {
+        populateTrailerSelect(profileTrailerSelect, savedCombo ? (savedCombo.trailer?.name || savedCombo.trailerName) : selectedTrailerSpecs.name);
     }
 
-    // Spara ekipage
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            const preset = {
-                carReg: (document.getElementById('preset-car-reg')?.value || '').trim().toUpperCase(),
-                trailerReg: (document.getElementById('preset-trailer-reg')?.value || '').trim().toUpperCase(),
-                horseWeight: parseFloat(document.getElementById('preset-horse-weight')?.value) || 0,
-                name: (document.getElementById('preset-name')?.value || '').trim()
+    if (savedCombo) {
+        showSavedPresetDisplay(savedCombo);
+        if (loadPresetBtn) loadPresetBtn.classList.remove('hidden');
+
+        const horseWeightInp = document.getElementById('preset-horse-weight');
+        const presetNameInp = document.getElementById('preset-name');
+        if (horseWeightInp) horseWeightInp.value = savedCombo.horseWeight || 600;
+        if (presetNameInp) presetNameInp.value = savedCombo.name || '';
+    }
+
+    const handleSaveCurrentCombo = () => {
+        const carName = document.getElementById("calc-car-name")?.value || selectedCarSpecs.name;
+        const carCurb = parseFloat(document.getElementById("calc-car-curb")?.value) || selectedCarSpecs.curb;
+        const carTotal = parseFloat(document.getElementById("calc-car-total")?.value) || selectedCarSpecs.total;
+        const carMaxTow = parseFloat(document.getElementById("calc-car-maxtow")?.value) || selectedCarSpecs.maxTow;
+
+        const trailerName = document.getElementById("calc-trailer-name")?.value || selectedTrailerSpecs.name;
+        const trailerCurb = parseFloat(document.getElementById("calc-trailer-curb")?.value) || selectedTrailerSpecs.curb;
+        const trailerTotal = parseFloat(document.getElementById("calc-trailer-total")?.value) || selectedTrailerSpecs.total;
+        const trailerPayload = parseFloat(document.getElementById("calc-trailer-payload")?.value) || selectedTrailerSpecs.payload;
+        const horseWeight = parseFloat(document.getElementById("calc-horse-weight")?.value) || 600;
+        const licenseType = document.querySelector('input[name="license-type"]:checked')?.value || "B";
+
+        const combo = {
+            car: { name: carName, curb: carCurb, total: carTotal, maxTow: carMaxTow },
+            trailer: { name: trailerName, curb: trailerCurb, total: trailerTotal, payload: trailerPayload },
+            horseWeight,
+            license: licenseType,
+            name: `${carName} + ${trailerName}`
+        };
+
+        localStorage.setItem('equinav_saved_combo', JSON.stringify(combo));
+        localStorage.setItem('equinav-preset', JSON.stringify(combo));
+        showSavedPresetDisplay(combo);
+        if (loadPresetBtn) loadPresetBtn.classList.remove('hidden');
+        showToast(`Ekipage sparat som standard!`, '✅');
+    };
+
+    if (saveComboBtn) {
+        saveComboBtn.addEventListener('click', handleSaveCurrentCombo);
+    }
+
+    if (savePresetBtn) {
+        savePresetBtn.addEventListener('click', () => {
+            const carVal = profileCarSelect?.value;
+            const trailerVal = profileTrailerSelect?.value;
+            const horseWeight = parseFloat(document.getElementById('preset-horse-weight')?.value) || 600;
+            const presetName = document.getElementById('preset-name')?.value || `${carVal} + ${trailerVal}`;
+
+            // Hämta specs från katalog
+            const cars = (typeof db !== "undefined" && db.getCarCatalog) ? db.getCarCatalog() : [];
+            const trailers = (typeof db !== "undefined" && db.getTrailerCatalog) ? db.getTrailerCatalog() : [];
+            const carObj = cars.find(c => c.name === carVal) || selectedCarSpecs;
+            const trailerObj = trailers.find(t => t.name === trailerVal) || selectedTrailerSpecs;
+
+            const combo = {
+                car: carObj,
+                trailer: trailerObj,
+                horseWeight,
+                name: presetName
             };
 
-            if (!preset.carReg && !preset.trailerReg) {
-                alert('Ange minst ett regnummer för att spara ekipaget.');
-                return;
-            }
+            localStorage.setItem('equinav_saved_combo', JSON.stringify(combo));
+            localStorage.setItem('equinav-preset', JSON.stringify(combo));
+            showSavedPresetDisplay(combo);
+            showToast('Ditt ekipage har sparats!', '✅');
 
-            localStorage.setItem('equinav-preset', JSON.stringify(preset));
-            showSavedPresetDisplay(preset);
-            showToast('Ekipage sparat!', '✅');
-
-            // Visa ladda-knappen i kalkylatorn
-            if (loadBtn) loadBtn.classList.remove('hidden');
+            // Uppdatera även kalkylatorn
+            const calcCarSelect = document.getElementById('calc-car-select');
+            const calcTrailerSelect = document.getElementById('calc-trailer-select');
+            if (calcCarSelect) calcCarSelect.value = carObj.name;
+            if (calcTrailerSelect) calcTrailerSelect.value = trailerObj.name;
+            applyCarSelection(carObj);
+            applyTrailerSelection(trailerObj);
+            calculateWeights();
         });
     }
 
-    // Ladda ekipage till viktkalkylator
-    if (loadBtn) {
-        loadBtn.addEventListener('click', () => {
-            const preset = JSON.parse(localStorage.getItem('equinav-preset') || 'null');
-            if (!preset) {
-                showToast('Inget ekipage sparat. Gå till Profil → Mitt Ekipage.', '⚠️');
+    if (loadPresetBtn) {
+        loadPresetBtn.addEventListener('click', () => {
+            const combo = JSON.parse(localStorage.getItem('equinav_saved_combo') || localStorage.getItem('equinav-preset') || 'null');
+            if (!combo) {
+                showToast('Inget ekipage sparat ännu.', '⚠️');
                 return;
             }
 
-            const carReg = document.getElementById('calc-car-reg');
-            const trailerReg = document.getElementById('calc-trailer-reg');
-            const horseWeight = document.getElementById('calc-horse-weight');
+            if (combo.car) applyCarSelection(combo.car);
+            if (combo.trailer) applyTrailerSelection(combo.trailer);
+            if (combo.horseWeight) {
+                const hw = document.getElementById('calc-horse-weight');
+                if (hw) hw.value = combo.horseWeight;
+            }
+            if (combo.license) {
+                const r = document.querySelector(`input[name="license-type"][value="${combo.license}"]`);
+                if (r) r.checked = true;
+            }
 
-            if (carReg) carReg.value = preset.carReg;
-            if (trailerReg) trailerReg.value = preset.trailerReg;
-            if (horseWeight) horseWeight.value = preset.horseWeight || 600;
+            const calcCarSelect = document.getElementById('calc-car-select');
+            const calcTrailerSelect = document.getElementById('calc-trailer-select');
+            if (calcCarSelect && combo.car) calcCarSelect.value = combo.car.name;
+            if (calcTrailerSelect && combo.trailer) calcTrailerSelect.value = combo.trailer.name;
 
             calculateWeights();
-            showToast(`Ekipage "${preset.name || preset.carReg}" laddat!`, '🚗');
+            showToast(`Laddade ekipage: ${combo.name || combo.car?.name || 'Sparat ekipage'}`, '🚗');
         });
     }
 }
@@ -2244,8 +2526,10 @@ function showSavedPresetDisplay(preset) {
     const text = document.getElementById('saved-preset-text');
     if (display && text) {
         display.classList.remove('hidden');
-        const label = preset.name || `${preset.carReg} + ${preset.trailerReg}`;
-        text.innerText = `✅ Sparat: ${label} (Häst: ${preset.horseWeight || '–'} kg)`;
+        const carName = preset.car?.name || preset.carName || "Dragbil";
+        const trailerName = preset.trailer?.name || preset.trailerName || "Släp";
+        const hw = preset.horseWeight || 600;
+        text.innerText = `✅ Sparat: ${preset.name || `${carName} + ${trailerName}`} (Häst: ${hw} kg)`;
     }
 }
 

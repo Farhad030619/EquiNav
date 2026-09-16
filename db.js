@@ -156,6 +156,81 @@ const db = {
         });
     },
 
+    // 2d. Hämta hela bilkatalogen (standard + användarens sparade)
+    getCarCatalog() {
+        const defaultCars = [
+            { id: "volvo-xc90-d5", name: "Volvo XC90 D5 AWD", make: "Volvo", curb: 2130, total: 2750, maxTow: 2700 },
+            { id: "volvo-xc60-d5", name: "Volvo XC60 D4/D5 AWD", make: "Volvo", curb: 1840, total: 2400, maxTow: 2400 },
+            { id: "volvo-v90-cc", name: "Volvo V90 Cross Country AWD", make: "Volvo", curb: 1820, total: 2400, maxTow: 2500 },
+            { id: "volvo-v70-d4", name: "Volvo V70 D4 AWD", make: "Volvo", curb: 1740, total: 2310, maxTow: 2000 },
+            { id: "vw-touareg-v6", name: "Volkswagen Touareg 3.0 V6 TDI", make: "Volkswagen", curb: 2070, total: 2850, maxTow: 3500 },
+            { id: "vw-passat-alltrack", name: "Volkswagen Passat Alltrack 2.0 TDI", make: "Volkswagen", curb: 1735, total: 2300, maxTow: 2200 },
+            { id: "vw-tiguan-allspace", name: "Volkswagen Tiguan Allspace TDI", make: "Volkswagen", curb: 1780, total: 2390, maxTow: 2500 },
+            { id: "bmw-x5-x30d", name: "BMW X5 xDrive30d (G05)", make: "BMW", curb: 2185, total: 2860, maxTow: 3500 },
+            { id: "bmw-x3-x30d", name: "BMW X3 xDrive30d", make: "BMW", curb: 1900, total: 2500, maxTow: 2400 },
+            { id: "audi-q7-50tdi", name: "Audi Q7 50 TDI quattro", make: "Audi", curb: 2135, total: 2940, maxTow: 3500 },
+            { id: "audi-q5-40tdi", name: "Audi Q5 40 TDI quattro", make: "Audi", curb: 1880, total: 2470, maxTow: 2400 },
+            { id: "ford-ranger-wildtrak", name: "Ford Ranger Wildtrak 4x4", make: "Ford", curb: 2190, total: 3270, maxTow: 3500 },
+            { id: "toyota-hilux-2.8d", name: "Toyota Hilux 2.8 D-4D 4x4", make: "Toyota", curb: 2100, total: 3210, maxTow: 3500 },
+            { id: "mb-gle-350d", name: "Mercedes-Benz GLE 350d 4MATIC", make: "Mercedes-Benz", curb: 2235, total: 3050, maxTow: 3500 },
+            { id: "subaru-outback-2.5i", name: "Subaru Outback 2.5i AWD", make: "Subaru", curb: 1640, total: 2100, maxTow: 2000 },
+            { id: "skoda-kodiaq-4x4", name: "Skoda Kodiaq 2.0 TDI 4x4", make: "Skoda", curb: 1750, total: 2350, maxTow: 2300 }
+        ];
+
+        let customCars = [];
+        try {
+            customCars = JSON.parse(localStorage.getItem('equinav_custom_cars') || '[]');
+        } catch (e) {}
+
+        return [...customCars, ...defaultCars];
+    },
+
+    // 2e. Hämta hela släpkatalogen (standard + användarens sparade)
+    getTrailerCatalog() {
+        const defaultTrailers = [
+            { id: "ume-b50", name: "Ume-släpet B50 / BBO", make: "Ume-släpet", curb: 820, total: 1990, payload: 1170 },
+            { id: "ume-a30", name: "Ume-släpet A30 Enkelhäst", make: "Ume-släpet", curb: 740, total: 1500, payload: 760 },
+            { id: "cheval-gold-ii", name: "Cheval Liberté Gold II", make: "Cheval Liberté", curb: 790, total: 2000, payload: 1210 },
+            { id: "cheval-touring-country", name: "Cheval Liberté Touring Country", make: "Cheval Liberté", curb: 850, total: 2600, payload: 1750 },
+            { id: "ifor-hb511", name: "Ifor Williams HB511", make: "Ifor Williams", curb: 920, total: 2600, payload: 1680 },
+            { id: "fogelsta-royal", name: "Fogelsta Royal 2000", make: "Fogelsta", curb: 860, total: 1990, payload: 1130 },
+            { id: "varmlandsvagnen-classic", name: "Värmlandsvagnen Classic", make: "Värmlandsvagnen", curb: 780, total: 1500, payload: 720 },
+            { id: "boeckmann-comfort", name: "Böckmann Comfort", make: "Böckmann", curb: 890, total: 2400, payload: 1510 }
+        ];
+
+        let customTrailers = [];
+        try {
+            customTrailers = JSON.parse(localStorage.getItem('equinav_custom_trailers') || '[]');
+        } catch (e) {}
+
+        return [...customTrailers, ...defaultTrailers];
+    },
+
+    // 2f. Spara anpassad bilmodell
+    saveCustomCar(car) {
+        let list = [];
+        try {
+            list = JSON.parse(localStorage.getItem('equinav_custom_cars') || '[]');
+        } catch (e) {}
+        // Ersätt om samma namn finns, annars lägg till först
+        list = list.filter(c => c.name.toLowerCase() !== car.name.toLowerCase());
+        list.unshift(car);
+        localStorage.setItem('equinav_custom_cars', JSON.stringify(list));
+        return list;
+    },
+
+    // 2g. Spara anpassat släp
+    saveCustomTrailer(trailer) {
+        let list = [];
+        try {
+            list = JSON.parse(localStorage.getItem('equinav_custom_trailers') || '[]');
+        } catch (e) {}
+        list = list.filter(t => t.name.toLowerCase() !== trailer.name.toLowerCase());
+        list.unshift(trailer);
+        localStorage.setItem('equinav_custom_trailers', JSON.stringify(list));
+        return list;
+    },
+
     // 3. Hämta alla användarrapporterade hinder
     async getHazards() {
         console.log("db: Hämtar hinder från Supabase...");

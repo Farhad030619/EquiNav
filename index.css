@@ -882,6 +882,103 @@ html, body {
     color: var(--primary-green);
 }
 
+/* Spec Grid for Cars and Trailers */
+.spec-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.spec-grid-3 .form-group {
+    margin-bottom: 0;
+}
+
+.spec-grid-3 .form-group label {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.spec-grid-3 input {
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.btn-mini-save {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-green);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.btn-mini-save:active {
+    transform: scale(0.95);
+    background: #e8eae6;
+}
+
+/* Quick weight pills */
+.quick-weight-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.btn-weight-pill {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-weight-pill:hover,
+.btn-weight-pill.active {
+    background: var(--primary-green);
+    color: #ffffff;
+    border-color: var(--primary-green);
+}
+
+/* Checklist in calculator results */
+.calc-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.calc-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--input-bg);
+}
+
+.calc-check-item.valid {
+    border-left: 3px solid #137333;
+    color: #137333;
+}
+
+.calc-check-item.invalid {
+    border-left: 3px solid var(--sos-red);
+    color: var(--sos-red);
+    background: #fde8e8;
+}
+
 /* Result Pill Banner */
 .calc-result-pill {
     background-color: #eaf2eb;
@@ -1452,6 +1549,20 @@ html, body {
 /* ----------------------------------------------------
  * LIVE NAVIGATION HUD OVERLAY (Equi live-navigering.png)
  * ---------------------------------------------------- */
+/* Hide all regular UI panels, bottom nav, badges, and controls when navigation is running */
+body.nav-active .sidebar,
+body.nav-active .bottom-nav,
+body.nav-active .horse-safety-badge,
+body.nav-active .map-floating-controls,
+body.nav-active #route-results,
+body.nav-active .map-toast {
+    display: none !important;
+}
+
+body.nav-active .navigation-hud {
+    z-index: 1000;
+}
+
 .navigation-hud {
     position: absolute;
     top: 0;

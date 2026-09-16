@@ -1,11 +1,11 @@
-const CACHE_NAME = 'equinav-v29-googlearrow';
+const CACHE_NAME = 'equinav-v31-vikt-navfix';
 const ROUTE_CACHE = 'equinav-routes-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './index.css?v=20260904_googlearrow',
-  './app.js?v=20260904_googlearrow',
-  './db.js?v=20260904_googlearrow',
+  './index.css?v=20260916_vikt_navfix',
+  './app.js?v=20260916_vikt_navfix',
+  './db.js?v=20260916_vikt_navfix',
   './logo.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
