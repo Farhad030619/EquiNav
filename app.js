@@ -2297,6 +2297,25 @@ function updateTurnInstructionsAndStats(currentPt, currentSpeedKmh) {
     if (navDistEl) navDistEl.innerText = `${remainingKm} km`;
     if (navEtaEl) navEtaEl.innerText = `Ankomst ${arrivalClock}`;
 
+    // Kontrollera om användaren har kört fel (mer än 150m från närmaste ruttpunkt)
+    if (minDistanceKm > 0.150 && isNavRunning) {
+        if (!window.isRecalculatingRoute) {
+            window.isRecalculatingRoute = true;
+            showToast("Räknar om rutt från din nya position...", "🔄");
+            if (isVoiceEnabled) {
+                speakSwedishInstruction("Räknar om rutt.");
+            }
+            const endPlace = currentRouteData.end || "Strömsholm";
+            calculateAndShowRoute(`${currentPt[0]}, ${currentPt[1]}`, endPlace).then(() => {
+                window.isRecalculatingRoute = false;
+                processedRouteSteps = processRouteSteps(currentRouteSteps, currentRouteTotalDistance || 15000, "Din position", endPlace);
+            }).catch(() => {
+                window.isRecalculatingRoute = false;
+            });
+        }
+        return;
+    }
+
     // Hitta det aktiva steget bland processedRouteSteps
     if (!processedRouteSteps || processedRouteSteps.length === 0) {
         processedRouteSteps = processRouteSteps(currentRouteSteps, totalDistMeters, currentRouteData.start, currentRouteData.end);
@@ -2332,7 +2351,11 @@ function updateTurnInstructionsAndStats(currentPt, currentSpeedKmh) {
         if (subBanner) subBanner.classList.add("hidden");
     }
 
-    // Ingen röstguidning – användaren vill inte ha tal
+    // Svensk röstguidning vid ny instruktion eller nära sväng
+    if (isVoiceEnabled && currentStep.speechText && lastSpokenText !== currentStep.speechText) {
+        lastSpokenText = currentStep.speechText;
+        speakSwedishInstruction(currentStep.speechText);
+    }
 }
 
 function finishNavigation() {
