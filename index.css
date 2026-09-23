@@ -882,6 +882,103 @@ html, body {
     color: var(--primary-green);
 }
 
+/* Spec Grid for Cars and Trailers */
+.spec-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.spec-grid-3 .form-group {
+    margin-bottom: 0;
+}
+
+.spec-grid-3 .form-group label {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.spec-grid-3 input {
+    padding: 10px 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.btn-mini-save {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary-green);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.btn-mini-save:active {
+    transform: scale(0.95);
+    background: #e8eae6;
+}
+
+/* Quick weight pills */
+.quick-weight-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.btn-weight-pill {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-weight-pill:hover,
+.btn-weight-pill.active {
+    background: var(--primary-green);
+    color: #ffffff;
+    border-color: var(--primary-green);
+}
+
+/* Checklist in calculator results */
+.calc-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.calc-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--input-bg);
+}
+
+.calc-check-item.valid {
+    border-left: 3px solid #137333;
+    color: #137333;
+}
+
+.calc-check-item.invalid {
+    border-left: 3px solid var(--sos-red);
+    color: var(--sos-red);
+    background: #fde8e8;
+}
+
 /* Result Pill Banner */
 .calc-result-pill {
     background-color: #eaf2eb;
@@ -1452,6 +1549,20 @@ html, body {
 /* ----------------------------------------------------
  * LIVE NAVIGATION HUD OVERLAY (Equi live-navigering.png)
  * ---------------------------------------------------- */
+/* Hide all regular UI panels, bottom nav, badges, and controls when navigation is running */
+body.nav-active .sidebar,
+body.nav-active .bottom-nav,
+body.nav-active .horse-safety-badge,
+body.nav-active .map-floating-controls,
+body.nav-active #route-results,
+body.nav-active .map-toast {
+    display: none !important;
+}
+
+body.nav-active .navigation-hud {
+    z-index: 1000;
+}
+
 .navigation-hud {
     position: absolute;
     top: 0;
@@ -1470,64 +1581,103 @@ html, body {
     pointer-events: auto;
 }
 
-/* Top Dark Green Turn-by-Turn Banner */
+/* Top Google Maps–style Turn Banner */
 .nav-top-banner {
-    background-color: #1e3020;
-    border-radius: var(--radius-lg);
-    padding: 16px 20px;
+    background: linear-gradient(135deg, #137333 0%, #0f9d58 100%);
+    border-radius: 18px;
+    padding: 14px 18px;
     color: #ffffff;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: var(--shadow-float);
+    gap: 14px;
+    box-shadow: 0 4px 16px rgba(15, 157, 88, 0.38), 0 2px 6px rgba(0,0,0,0.18);
 }
 
 .nav-turn-icon {
-    font-size: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #ffffff;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
 }
 
 .nav-instruction-details {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
+    min-width: 0;
 }
 
 .nav-next-dist {
     font-family: var(--font-title);
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 800;
     color: #ffffff;
+    line-height: 1;
+    letter-spacing: -0.5px;
 }
 
 .nav-next-step {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.88);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-/* Sub-banner Next Instruction */
+/* Sub-banner – next manoeuvre */
 .nav-sub-banner {
-    background-color: #3b4e3e;
+    background: rgba(19, 115, 51, 0.92);
     border-radius: 12px;
-    padding: 10px 16px;
+    padding: 8px 14px;
     color: #ffffff;
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 8px;
+    gap: 8px;
+    margin-top: 6px;
     font-size: 13px;
-    box-shadow: var(--shadow-card);
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    backdrop-filter: blur(4px);
+}
+
+/* Floating "Återcentrera" pill */
+.nav-recenter-pill {
+    position: absolute;
+    bottom: 155px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 8px 18px 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1A73E8;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.22);
+    cursor: pointer;
+    pointer-events: auto;
+    animation: slideUpPill 0.2s ease-out;
+    white-space: nowrap;
+    z-index: 510;
+}
+
+@keyframes slideUpPill {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 /* Right Floating Action Buttons */
 .nav-floating-actions {
     position: absolute;
-    top: 150px;
+    top: 155px;
     right: 16px;
     display: flex;
     flex-direction: column;
@@ -1535,110 +1685,146 @@ html, body {
 }
 
 .nav-action-btn {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background-color: #ffffff;
-    border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-card);
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.22), 0 1px 3px rgba(0,0,0,0.12);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 18px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.nav-action-btn:active {
+    transform: scale(0.92);
+    box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+}
+
+.nav-action-btn.active {
+    background: #e8f5e9;
 }
 
 /* Speed Indicator (Bottom Left) */
 .nav-speed-overlay {
     position: absolute;
-    bottom: 160px;
+    bottom: 155px;
     left: 16px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .nav-speed-limit-circle {
-    width: 48px;
-    height: 48px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
-    background-color: #ffffff;
-    border: 4px solid #d93829;
-    color: #1a201c;
+    background: #ffffff;
+    border: 4px solid #c62828;
+    color: #1a1a1a;
     font-family: var(--font-title);
-    font-size: 18px;
-    font-weight: 800;
+    font-size: 17px;
+    font-weight: 900;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    letter-spacing: -1px;
 }
 
 .nav-current-speed-pill {
-    background-color: #1a201c;
+    background: #1a1a1a;
     color: #ffffff;
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 10px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    text-align: center;
+    min-width: 54px;
 }
 
-/* Bottom Stats Card in Navigation Mode */
+/* Bottom Google Maps–style Navigation Dock */
 .nav-bottom-card {
-    background-color: #ffffff;
-    border-radius: var(--radius-xl);
-    padding: 20px;
-    box-shadow: var(--shadow-float);
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 14px 16px 18px;
+    box-shadow: 0 -2px 0 rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.18);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
 }
 
 .nav-bottom-handle {
     width: 36px;
     height: 4px;
-    background-color: #d1d5db;
+    background: #dadce0;
     border-radius: 2px;
-    margin: 0 auto -4px auto;
+    margin: 0 auto;
+}
+
+.nav-bottom-dock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 .nav-bottom-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    flex: 1;
+    min-width: 0;
 }
 
 .nav-time-large {
     font-family: var(--font-title);
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--primary-green);
+    font-size: 30px;
+    font-weight: 800;
+    color: #137333;
+    line-height: 1;
+    letter-spacing: -1px;
 }
 
 .nav-sub-info {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: #5f6368;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
 }
 
-.btn-end-navigation-red {
-    width: 100%;
-    background-color: var(--sos-red);
-    color: #ffffff;
+.nav-sub-dot {
+    color: #dadce0;
+}
+
+/* Circular red exit button – Google Maps style */
+.btn-end-nav-circle {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    border-radius: 50%;
+    background: #d93025;
     border: none;
-    border-radius: var(--radius-md);
-    padding: 15px;
-    font-family: var(--font-body);
-    font-size: 15px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: background-color 0.15s;
+    box-shadow: 0 3px 12px rgba(217, 48, 37, 0.45);
+    transition: background 0.15s, transform 0.12s;
+    flex-shrink: 0;
 }
 
-.btn-end-navigation-red:active {
-    background-color: var(--sos-red-hover);
+.btn-end-nav-circle:active {
+    background: #b71c1c;
+    transform: scale(0.94);
 }
+
 
 /* ----------------------------------------------------
  * FLOATING MAP TOAST & CONTROLS
