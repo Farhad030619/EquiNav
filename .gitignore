@@ -1,1 +1,25 @@
+# macOS systemfiler
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Vercel
 .vercel
+
+# Miljövariabler (känsliga nycklar ska aldrig till git)
+.env
+.env.local
+.env.*.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Redigerare (VS Code, Cursor, etc.)
+.vscode/
+.idea/
+*.swp
+*.swo
