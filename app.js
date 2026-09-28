@@ -735,7 +735,7 @@ async function calculateAndShowRoute(startPlace, endPlace) {
             iconSize: [24, 24],
             iconAnchor: [12, 12]
         })
-    }).addTo(map).bindPopup(`Start: ${startPlace}`);
+    }).addTo(map).bindPopup(`Start: ${escapeHtml(startPlace)}`);
 
     endMarker = L.marker(endCoords, {
         icon: L.divIcon({
@@ -744,7 +744,7 @@ async function calculateAndShowRoute(startPlace, endPlace) {
             iconSize: [24, 24],
             iconAnchor: [12, 12]
         })
-    }).addTo(map).bindPopup(`Mål: ${endPlace}`);
+    }).addTo(map).bindPopup(`Mål: ${escapeHtml(endPlace)}`);
 
     // Hämta rutt via OSRM med sväng-anvisningar (steps)
     try {
@@ -940,7 +940,7 @@ function initWeightCalculator() {
                     maxTow: match.maxTow
                 };
                 if (resultsPreview) {
-                    resultsPreview.innerHTML = `✅ Bil vald: <strong>${selectedCarSpecs.name}</strong> (Tjänstevikt: ${selectedCarSpecs.curb}kg, Total: ${selectedCarSpecs.total}kg, Dragvikt: ${selectedCarSpecs.maxTow}kg)`;
+                    resultsPreview.innerHTML = `✅ Bil vald: <strong>${escapeHtml(selectedCarSpecs.name)}</strong> (Tjänstevikt: ${parseInt(selectedCarSpecs.curb) || 0}kg, Total: ${parseInt(selectedCarSpecs.total) || 0}kg, Dragvikt: ${parseInt(selectedCarSpecs.maxTow) || 0}kg)`;
                 }
             }
         }
@@ -956,7 +956,7 @@ function initWeightCalculator() {
                     payload: match.payload || (match.total - match.curb)
                 };
                 if (resultsPreview) {
-                    resultsPreview.innerHTML += `<br>✅ Släp valt: <strong>${selectedTrailerSpecs.name}</strong> (Total: ${selectedTrailerSpecs.total}kg, Maxlast: ${selectedTrailerSpecs.payload}kg)`;
+                    resultsPreview.innerHTML += `<br>✅ Släp valt: <strong>${escapeHtml(selectedTrailerSpecs.name)}</strong> (Total: ${parseInt(selectedTrailerSpecs.total) || 0}kg, Maxlast: ${parseInt(selectedTrailerSpecs.payload) || 0}kg)`;
                 }
             }
         }
@@ -1096,10 +1096,11 @@ function calculateWeights() {
     if (banner && bannerText) {
         if (isLegal) {
             banner.className = "calc-result-pill";
-            bannerText.innerHTML = `✅ <strong>Kombinationen är laglig!</strong> Ekipaget uppfyller alla krav för ditt ${licenseType}-körkort.`;
+            bannerText.innerHTML = `✅ <strong>Kombinationen är laglig!</strong> Ekipaget uppfyller alla krav för ditt ${escapeHtml(licenseType)}-körkort.`;
         } else {
             banner.className = "calc-result-pill warning";
-            bannerText.innerHTML = `⚠️ <strong>Varning: Ej laglig kombination!</strong><br>${errors.join("<br>")}`;
+            bannerText.innerHTML = `⚠️ <strong>Varning: Ej laglig kombination!</strong><br>${errors.map(e => escapeHtml(e)).join("<br>")}`;
+            // Notera: errors genereras internt av appen, men vi escapar ändå för defense-in-depth
         }
     }
 
@@ -1157,8 +1158,8 @@ async function initHazards() {
                             <span>⚠️</span>
                         </div>
                         <div class="hazard-card-details">
-                            <strong>${h.type || "Väghinder"}</strong>
-                            <span>${h.comment || "Rapporterat"} · ${h.timestamp || "aktivt"}</span>
+                            <strong>${escapeHtml(h.type || "Väghinder")}</strong>
+                            <span>${escapeHtml(h.comment || "Rapporterat")} · ${escapeHtml(h.timestamp || "aktivt")}</span>
                             <div class="hazard-actions-row">
                                 <button class="hazard-vote-btn" onclick="this.classList.toggle('upvoted'); this.querySelector('.hazard-vote-count').innerText = this.classList.contains('upvoted') ? '1' : '0'">
                                     👍 Finns kvar <span class="hazard-vote-count">0</span>
@@ -1180,7 +1181,7 @@ async function initHazards() {
                                 iconSize: [28, 28],
                                 iconAnchor: [14, 14]
                             })
-                        }).addTo(map).bindPopup(`<strong>${h.type}</strong><br>${h.comment}`);
+                        }).addTo(map).bindPopup(`<strong>${escapeHtml(h.type || '')}</strong><br>${escapeHtml(h.comment || '')}`);
                     }
                 });
             }
@@ -1194,7 +1195,9 @@ async function initHazards() {
             const hazardTypeSelect = document.getElementById("hazard-type");
             const hazardTypeValue = hazardTypeSelect.value;
             const hazardTypeText = hazardTypeSelect.options[hazardTypeSelect.selectedIndex].text;
-            const comment = document.getElementById("hazard-comment").value.trim() || "Rapporterat av förare";
+            let comment = document.getElementById("hazard-comment").value.trim() || "Rapporterat av förare";
+            // Säkerhetsvalidering: begränsa längd och rensa ogiltiga tecken
+            comment = comment.substring(0, 200).replace(/[<>"'`]/g, '');
             const posDisplay = document.getElementById("hazard-coords-display").innerText;
 
             if (posDisplay.includes("Ingen position") || !selectedCoordinatesForHazard) {
@@ -1231,8 +1234,8 @@ async function initHazards() {
                         <span>⚠️</span>
                     </div>
                     <div class="hazard-card-details">
-                        <strong>${hazardTypeText}</strong>
-                        <span>${comment} · rapporterat nyss</span>
+                        <strong>${escapeHtml(hazardTypeText)}</strong>
+                        <span>${escapeHtml(comment)} · rapporterat nyss</span>
                         <div class="hazard-actions-row">
                             <button class="hazard-vote-btn" onclick="this.classList.toggle('upvoted'); this.querySelector('.hazard-vote-count').innerText = this.classList.contains('upvoted') ? '1' : '0'">
                                 👍 Finns kvar <span class="hazard-vote-count">0</span>
@@ -1295,19 +1298,21 @@ async function loadAndSortClinics() {
         
         const card = document.createElement('div');
         card.className = `clinic-card${isNearest ? ' card-active-border' : ''}`;
+        const safeName = escapeHtml(clinic.name);
+        const safeTel = clinic.tel.replace(/[^\d+\s-]/g, ''); // Tillåt bara siffror, +, mellanslag, bindestreck
         card.innerHTML = `
             <div class="clinic-card-top">
                 <div>
-                    <h4 class="clinic-name">${clinic.name}</h4>
-                    <p class="clinic-address">${clinic.address}</p>
-                    <p class="clinic-desc">${clinic.desc}</p>
-                    <p class="clinic-turnspace">🔄 ${clinic.turnspace}</p>
+                    <h4 class="clinic-name">${safeName}</h4>
+                    <p class="clinic-address">${escapeHtml(clinic.address)}</p>
+                    <p class="clinic-desc">${escapeHtml(clinic.desc)}</p>
+                    <p class="clinic-turnspace">🔄 ${escapeHtml(clinic.turnspace)}</p>
                 </div>
-                <span class="clinic-distance-badge ${isNearest ? 'badge-red-soft' : 'badge-gray-soft'}">${distText}</span>
+                <span class="clinic-distance-badge ${isNearest ? 'badge-red-soft' : 'badge-gray-soft'}">${escapeHtml(distText)}</span>
             </div>
             <div class="clinic-actions-row">
-                <a href="tel:${clinic.tel.replace(/[\s-]/g, '')}" class="btn-outline-action">📞 Ring jour</a>
-                <button class="btn-dark-action btn-compact" onclick="navigateClinic('${clinic.name.replace(/'/g, '\\\'')}', ${clinic.coords[0]}, ${clinic.coords[1]})">🧭 Navigera hit</button>
+                <a href="tel:${safeTel.replace(/[\s-]/g, '')}" class="btn-outline-action">📞 Ring jour</a>
+                <button class="btn-dark-action btn-compact" onclick="navigateClinic('${safeName.replace(/'/g, '\\\'')}', ${parseFloat(clinic.coords[0]) || 0}, ${parseFloat(clinic.coords[1]) || 0})">🧭 Navigera hit</button>
             </div>
         `;
         container.appendChild(card);

@@ -44,9 +44,28 @@ self.addEventListener('message', (event) => {
     return;
   }
   if (event.data && event.data.type === 'CACHE_ROUTE') {
+    // Validera att datan ser ut som en giltig OSRM-rutt innan vi cachar
+    const routeData = event.data.data;
+    if (!routeData || typeof routeData !== 'object') {
+      console.warn('SW: Avvisade ogiltig ruttdata (inte ett objekt)');
+      return;
+    }
+    // Kolla att det finns en routes-array med geometri (typiskt OSRM-svar)
+    if (routeData.routes && Array.isArray(routeData.routes) && routeData.routes.length > 0) {
+      const route = routeData.routes[0];
+      if (!route.geometry || !route.distance || typeof route.duration !== 'number') {
+        console.warn('SW: Avvisade ruttdata – saknar geometry/distance/duration');
+        return;
+      }
+    }
+    // Begränsa storlek på cachad data (max 2MB)
+    const dataStr = JSON.stringify(routeData);
+    if (dataStr.length > 2 * 1024 * 1024) {
+      console.warn('SW: Avvisade för stor ruttdata (' + dataStr.length + ' bytes)');
+      return;
+    }
     caches.open(ROUTE_CACHE).then((cache) => {
-      // Create a synthetic response
-      const response = new Response(JSON.stringify(event.data.data), {
+      const response = new Response(dataStr, {
         headers: { 'Content-Type': 'application/json' }
       });
       cache.put(event.data.url || 'last-route', response);

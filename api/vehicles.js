@@ -59,9 +59,19 @@ const VEHICLE_CATALOG = [
 ];
 
 module.exports = async (req, res) => {
-    // Enable CORS
+    // CORS – begränsa till kända domäner
+    const allowedOrigins = [
+        'https://equinav.vercel.app',
+        'https://hasttransport-gps.vercel.app',
+        'http://localhost:3000',
+        'http://localhost:5500',
+        'http://127.0.0.1:5500'
+    ];
+    const origin = req.headers.origin || '';
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
